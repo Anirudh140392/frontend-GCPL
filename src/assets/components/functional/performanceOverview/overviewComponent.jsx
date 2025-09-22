@@ -180,7 +180,7 @@ const OverviewComponent = () => {
 
      const CategoryColumnsFlipkart = [
         {
-            field: "Campaign_Tags",
+            field: "Campaign_Type",
             headerName: "CAMPAIGN TAGS",
             minWidth: 200,
            
