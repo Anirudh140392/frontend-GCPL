@@ -355,7 +355,7 @@ const Navbar = () => {
                                         }
                                     />
                                 )}
-                                {["Amazon","Zepto","BigBasket","Flipkart"].includes(operatorName) && (
+                                {["Amazon","Zepto","BigBasket"].includes(operatorName) && (
                                     <RedirectLink
                                         url={`/rules${operatorTypeParams === ""
                                             ? `?operator=${OPERATOR.AMAZON}`
@@ -409,7 +409,7 @@ const Navbar = () => {
                                         }
                                     />
                                 )}
-                                {!["Amazon","Swiggy"].includes(operatorName) && (
+                                {!["Amazon","Swiggy","Flipkart"].includes(operatorName) && (
                                     <RedirectLink
                                         url={`/negative-keywords${operatorTypeParams === ""
                                             ? `?operator=${OPERATOR.AMAZON}`
