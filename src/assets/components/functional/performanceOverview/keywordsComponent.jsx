@@ -1,13 +1,13 @@
 import React, { useEffect, useContext, useState, useMemo, useRef } from "react";
 import MuiDataTableComponent from "../../common/muidatatableComponent";
 import '../../../styles/keywordsComponent/keywordsComponent.less';
-import { Typography, Snackbar, Alert, Button, Switch, Box, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import { Typography, Snackbar, Alert, Button, Switch, Box, FormControl, InputLabel, Select, MenuItem, CircularProgress } from "@mui/material";
 import overviewContext from "../../../../store/overview/overviewContext";
 import { useSearchParams, useNavigate } from "react-router";
 import ColumnPercentageDataComponent from "../../common/columnPercentageDataComponent";
 import TrendsModal from "./modal/trendsModal";
 import BidCell from "./overview/bidCell";
-import { Dialog, DialogActions, DialogContent, DialogTitle, CircularProgress } from "@mui/material";
+import { Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material";
 import { cachedFetch } from "../../../../services/cachedFetch";
 import { getCache } from "../../../../services/cacheUtils";
 import NewPercentageDataComponent from "../../common/newPercentageDataComponent";
@@ -133,6 +133,7 @@ const KeywordsComponent = () => {
     };
 
     const abortControllerRef = useRef(null);
+    const isFirstBrandLoadRef = useRef(true); // guard to avoid firing brand effect on initial mount
 
     const handleRefresh = () => {
         getKeywordsData(true);
@@ -140,8 +141,16 @@ const KeywordsComponent = () => {
 
     useEffect(() => {
         const timeout = setTimeout(() => {
-            getKeywordsData();
+            // If brand is already selected on first load, force refresh to ensure network fetch and buffering
+            if (selectedBrand) {
+                getKeywordsData(true);
+            } else {
+                getKeywordsData();
+            }
         }, 100);
+
+        // mark that initial load happened so brand-change effect can skip first invocation
+        isFirstBrandLoadRef.current = true;
 
         return () => {
             if (abortControllerRef.current) {
@@ -149,9 +158,15 @@ const KeywordsComponent = () => {
             }
             clearTimeout(timeout);
         }
-    }, [operator, dateRange, campaignName, selectedBrand]); // Added selectedBrand to dependencies
+    }, [operator, dateRange, campaignName]);
+
+    // Trigger a force refresh only when brand actually changes after initial mount
     useEffect(() => {
-        console.log("selectedBrand", selectedBrand);
+        // skip the first run (initial mount) — isFirstBrandLoadRef is true during mount
+        if (isFirstBrandLoadRef.current) {
+            isFirstBrandLoadRef.current = false;
+            return;
+        }
         if (selectedBrand) {
             getKeywordsData(true);
         }
@@ -422,19 +437,27 @@ const KeywordsComponent = () => {
             <TrendsModal
                 showTrendsModal={showTrendsModal}
                 setShowTrendsModal={setShowTrendsModal} />
-            
             {/* Brand Filter controlled via Header dropdown (URL param 'brand') */}
-            
             <div className="shadow-box-con-keywords aggregated-view-con">
-                <div className="px-3 py-2 d-flex justify-content-end">
-                    <Button variant="contained" size="small" onClick={handleRefresh}>Refresh</Button>
-                </div>
                 <div className="datatable-con-keywords">
-                    <MuiDataTableComponent
-                        isLoading={isLoading}
-                        isExport={true}
-                        columns={columns}
-                        data={keywordsData.data || []} />
+                    <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}>
+                        <Button variant="outlined" size="small" onClick={handleRefresh}>
+                            Refresh
+                        </Button>
+                    </Box>
+
+                    {/* Show spinner while fetching, otherwise show table */}
+                    {isLoading ? (
+                        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 200 }}>
+                            <CircularProgress />
+                        </Box>
+                    ) : (
+                        <MuiDataTableComponent
+                            isLoading={isLoading}
+                            isExport={true}
+                            columns={columns}
+                            data={keywordsData.data || []} />
+                    )}
                 </div>
             </div>
             <Snackbar anchorOrigin={{ vertical: "top", horizontal: "center" }}

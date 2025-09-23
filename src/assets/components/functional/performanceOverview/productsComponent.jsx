@@ -5,8 +5,8 @@ import overviewContext from "../../../../store/overview/overviewContext";
 import { useSearchParams } from "react-router";
 import ColumnPercentageDataComponent from "../../common/columnPercentageDataComponent";
 import OnePercentageDataComponent from "../../common/onePercentageComponent";
-import { Switch, Button, Box } from "@mui/material";
-import { Dialog, DialogActions, DialogContent, DialogTitle, CircularProgress, Snackbar, Alert } from "@mui/material";
+import { Switch, Button, Box, CircularProgress } from "@mui/material";
+import { Dialog, DialogActions, DialogContent, DialogTitle, Snackbar, Alert } from "@mui/material";
 import NewPercentageDataComponent from "../../common/newPercentageDataComponent";
 import { cachedFetch } from "../../../../services/cachedFetch";
 import { getCache } from "../../../../services/cacheUtils";
@@ -873,6 +873,7 @@ const ProductsComponent = () => {
     }, [operator, brands]);
 
     const abortControllerRef = useRef(null);
+    const isFirstBrandLoadRef = useRef(true);
 
     const handleRefresh = () => {
         getProductsData(true);
@@ -880,8 +881,16 @@ const ProductsComponent = () => {
 
     useEffect(() => {
         const timeout = setTimeout(() => {
-            getProductsData();
+            // If brand already present on initial load, force refresh so spinner shows and cache is bypassed
+            if (selectedBrand) {
+                getProductsData(true);
+            } else {
+                getProductsData();
+            }
         }, 100);
+
+        // mark that initial load happened
+        isFirstBrandLoadRef.current = true;
 
         return () => {
             if (abortControllerRef.current) {
@@ -891,10 +900,14 @@ const ProductsComponent = () => {
         }
     }, [operator, dateRange]);
 
-    // Add effect to trigger fresh API call on brand change
+    // Trigger force refresh only when brand changes after initial mount
     useEffect(() => {
+        if (isFirstBrandLoadRef.current) {
+            isFirstBrandLoadRef.current = false;
+            return;
+        }
         if (selectedBrand) {
-            getProductsData(true); // force refresh and clear cache
+            getProductsData(true);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedBrand]);
@@ -922,11 +935,18 @@ const ProductsComponent = () => {
                     <Button variant="contained" size="small" onClick={handleRefresh}>Refresh</Button>
                 </div>
                 <div className="datatable-con-campaigns">
-                    <MuiDataTableComponent
-                        isLoading={isLoading}
-                        isExport={true}
-                        columns={columns}
-                        data={productsData?.data} />
+                    {isLoading ? (
+                        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 200 }}>
+                            <CircularProgress />
+                        </Box>
+                    ) : (
+                        <MuiDataTableComponent
+                            isLoading={isLoading}
+                            isExport={true}
+                            columns={columns}
+                            data={productsData?.data}
+                        />
+                    )}
                 </div>
             </div>
             <Snackbar anchorOrigin={{ vertical: "top", horizontal: "center" }}
