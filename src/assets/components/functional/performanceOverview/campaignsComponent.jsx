@@ -30,7 +30,7 @@ const CampaignsComponent = (props, ref) => {
         adType: null 
     });
     const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
-    const [selectedBrand, setSelectedBrand] = useState("");
+    const [selectedBrand, setSelectedBrand] = useState("Cinthol Grocery"); // Initial state for brand
 
     const [searchParams, setSearchParams] = useSearchParams();
     const operator = searchParams.get("operator");

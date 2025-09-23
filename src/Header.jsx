@@ -67,7 +67,8 @@ const Header = () => {
   const [showSelectedOperator, setShowSelectedOperator] = useState(
     operatorType ? operatorType : (OPERATOR.BLINKIT || "Amazon")
   );
-  const [selectedBrand, setSelectedBrand] = useState(brandType);
+  const [selectedBrand, setSelectedBrand] = useState(brandType || "Cinthol Grocery");
+
   const [showHeaderLogo, setShowHeaderLogo] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 

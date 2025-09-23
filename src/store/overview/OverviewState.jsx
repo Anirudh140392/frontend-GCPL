@@ -25,7 +25,7 @@ const OverviewState = (props) => {
     const [brands, setBrands] = useState({})
 
     const [campaignName, setCampaignName] = useState("")
-
+ const [selectedBrand, setSelectedBrand] = useState("Cinthol Grocery"); 
     const [overviewLoading, setOverviewLoading] = useState(false);
 
     const campaignSetter = (value) => {
@@ -46,6 +46,9 @@ const OverviewState = (props) => {
 
         try {
             const url = `${host}/gcpl/${endpoint}?start_date=${startDate}&end_date=${endDate}&platform=${operator}`;
+            if (selectedBrand && typeof selectedBrand === "string") {
+                playPauseUrl += `&brand_name=${encodeURIComponent(selectedBrand)}`;
+            }
             const cacheKey = `cache:GET:${url}`;
 
             const cached = getCache(cacheKey);
@@ -117,10 +120,62 @@ const OverviewState = (props) => {
         if (data) setBrands(data);
     }, [operator]);
 
-    const getOverviewData = useCallback(async () => {
-        const data = await fetchAPI("home", setOverviewLoading);
-        if (data) setOverviewData(data);
-    }, [dateRange, operator]);
+    const getOverviewData = useCallback(async (forceRefresh = false) => {
+        if (!operator) return;
+        setOverviewLoading(true);
+        const token = localStorage.getItem("accessToken");
+        if (!token) {
+            console.error("No access token found");
+            setOverviewLoading(false);
+            return;
+        }
+
+        const startDate = formatDate(dateRange[0].startDate);
+        const endDate = formatDate(dateRange[0].endDate);
+        const ts = forceRefresh ? `&_=${Date.now()}` : "";
+
+        let url = `${host}/gcpl/home?start_date=${startDate}&end_date=${endDate}&platform=${operator}${ts}`;
+        if (selectedBrand && typeof selectedBrand === "string") {
+            url += `&brand_name=${encodeURIComponent(selectedBrand)}`;
+        }
+        const cacheKey = `cache:GET:${url}`;
+
+        try {
+            if (forceRefresh) {
+                try { localStorage.removeItem(cacheKey); } catch (_) {}
+            } else {
+                const cached = getCache(cacheKey);
+                if (cached) {
+                    setOverviewData(cached);
+                    setOverviewLoading(false);
+                    return;
+                }
+            }
+
+            const response = await cachedFetch(url, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            }, { ttlMs: 5 * 60 * 1000, cacheKey, bypassCache: forceRefresh });
+
+            if (!response.ok) {
+                throw new Error(`Error: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            setOverviewData(data);
+            if (forceRefresh) {
+                try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch (_) {}
+            }
+        } catch (error) {
+            console.error("Failed to fetch overview data:", error.message);
+            setOverviewData({});
+        } finally {
+            setOverviewLoading(false);
+        }
+    }, [dateRange, operator, selectedBrand, formatDate, host]);
 
     useEffect(() => {
         setCampaignName("")

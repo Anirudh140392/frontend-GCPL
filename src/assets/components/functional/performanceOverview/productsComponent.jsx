@@ -20,7 +20,7 @@ const ProductsComponent = () => {
 
     const [searchParams] = useSearchParams();
     const operator = searchParams.get("operator");
-
+    const selectedBrand = searchParams.get("brand") || "Cinthol Grocery";
     const [productsData, setProductsData] = useState({})
     const [isLoading, setIsLoading] = useState(false)
     const [updatingProduct, setUpdatingProduct] = useState({});
@@ -791,7 +791,7 @@ const ProductsComponent = () => {
         }
     };
 
-    const getProductsData = async () => {
+    const getProductsData = async (forceRefresh = false) => {
         if (!operator) return;
 
         if (abortControllerRef.current) {
@@ -813,18 +813,26 @@ const ProductsComponent = () => {
 
         const startDate = formatDate(dateRange[0].startDate);
         const endDate = formatDate(dateRange[0].endDate);
+        const ts = forceRefresh ? `&_=${Date.now()}` : "";
 
-        try {
-            const url = `https://react-api-script.onrender.com/gcpl/product?start_date=${startDate}&end_date=${endDate}&platform=${operator}`;
-            const cacheKey = `cache:GET:${url}`;
+        let url = `https://react-api-script.onrender.com/gcpl/product?start_date=${startDate}&end_date=${endDate}&platform=${operator}${ts}`;
+        if (selectedBrand && typeof selectedBrand === "string") {
+            url += `&brand_name=${encodeURIComponent(selectedBrand)}`;
+        }
+        const cacheKey = `cache:GET:${url}`;
 
+        if (forceRefresh) {
+            try { localStorage.removeItem(cacheKey); } catch (_) {}
+        } else {
             const cached = getCache(cacheKey);
             if (cached) {
                 setProductsData(cached);
                 setIsLoading(false);
                 return;
             }
+        }
 
+        try {
             const response = await cachedFetch(url, {
                 method: "GET",
                 headers: {
@@ -832,7 +840,7 @@ const ProductsComponent = () => {
                     Authorization: `Bearer ${token}`,
                 },
                 signal: controller.signal,
-            }, { ttlMs: 5 * 60 * 1000, cacheKey });
+            }, { ttlMs: 5 * 60 * 1000, cacheKey, bypassCache: forceRefresh });
 
             if (!response.ok) {
                 throw new Error(`Error: ${response.status} ${response.statusText}`);
@@ -840,6 +848,9 @@ const ProductsComponent = () => {
 
             const data = await response.json();
             setProductsData(data);
+            if (forceRefresh) {
+                try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch (_) {}
+            }
         } catch (error) {
             if (error.name === "AbortError") {
                 console.log("Previous request aborted due to operator change.");
