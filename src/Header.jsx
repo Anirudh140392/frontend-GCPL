@@ -41,8 +41,8 @@ const Header = () => {
     {"baccount": "K4ZBBTIP0R", "aaccount": "GGRG6OJKHMNQ", "brand": "Kamasutra Nationals"}
   ];
 
-  // Available operators
-  const availableOperators = ["Amazon", "Flipkart", "Zepto", "Swiggy", "Blinkit"];
+  // Available operators - Only Flipkart
+  const availableOperators = ["Flipkart"];
 
   // Get unique brands for dropdown
   const uniqueBrands = React.useMemo(() => {
@@ -64,8 +64,9 @@ const Header = () => {
     dateRange: [{ startDate: new Date(), endDate: new Date() }],
   };
 
+  // Initial state is undefined/empty instead of having a default operator
   const [showSelectedOperator, setShowSelectedOperator] = useState(
-    operatorType ? operatorType : (OPERATOR.BLINKIT || "Amazon")
+    operatorType || ""
   );
   const [selectedBrand, setSelectedBrand] = useState(brandType || "Cinthol Grocery");
 
@@ -75,7 +76,11 @@ const Header = () => {
   // Update URL when operator changes
   useEffect(() => {
     const newSearchParams = new URLSearchParams(searchParams);
-    newSearchParams.set("operator", showSelectedOperator);
+    if (showSelectedOperator) {
+      newSearchParams.set("operator", showSelectedOperator);
+    } else {
+      newSearchParams.delete("operator");
+    }
     setSearchParams(newSearchParams);
   }, [showSelectedOperator]);
 
@@ -151,10 +156,10 @@ const Header = () => {
           </div>
         </div>
         <div className="d-flex actions-con">
-          {/* Operator Dropdown */}
+          {/* Operator Dropdown - Only Flipkart */}
           <Dropdown className="operator-selected-tab">
             <Dropdown.Toggle variant="white" id="dropdown-basic">
-              {showSelectedOperator}
+              {showSelectedOperator || "Select Platform"}
             </Dropdown.Toggle>
             <Dropdown.Menu>
               {availableOperators.map((operator) => (

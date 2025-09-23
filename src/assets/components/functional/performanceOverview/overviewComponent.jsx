@@ -507,16 +507,7 @@ const OverviewComponent = () => {
             }
             clearTimeout(timeout);
         }
-    }, [operator, dateRange, selectedBrand, getOverviewData]); // Added selectedBrand to dependencies
-
-    // Additional useEffect to handle brand changes and force refresh
-    useEffect(() => {
-        console.log("selectedBrand", selectedBrand);
-        if (selectedBrand) {
-            getOverviewData(true); // Force refresh when brand changes
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedBrand]);
+    }, [operator, dateRange, getOverviewData]); // <-- Remove selectedBrand from dependencies
 
     const handleRefresh = () => {
         getOverviewData(true);
