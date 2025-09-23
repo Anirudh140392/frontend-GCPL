@@ -4,16 +4,51 @@ import SelectFieldComponent from "./assets/components/molecules/selectFieldCompo
 import HamburgerMenuIcon from "./assets/icons/header/hamburgerMenuIcon";
 import ShareIcon from "./assets/icons/header/shareIcon";
 import { OPERATOR } from "./assets/lib/constant/index";
-import { useNavigate, useLocation } from "react-router";
+import { useNavigate, useLocation, useSearchParams } from "react-router";
 import CustomDateRangePicker from "./assets/components/molecules/customDateRangePicker";
-import { Box, Button } from "@mui/material";
+import { Box, Button, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import overviewContext from "./store/overview/overviewContext";
 
 const Header = () => {
-  const queryParams = new URLSearchParams(window.location.search);
-  const operatorType = queryParams.get("operator") || "";
+  const [searchParams, setSearchParams] = useSearchParams();
+  const operatorType = searchParams.get("operator") || "";
+  const brandType = searchParams.get("brand") || "";
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Brand account combinations
+  const accountCombinations = [
+    {"baccount": "PR83RX8HIYLX", "aaccount": "BGHM2A61UYC1", "brand": "Godrej Fab Nationals"},
+    {"baccount": "PR83RX8HIYLX", "aaccount": "OQHE4X5E9H9Z", "brand": "Ezee Grocery"},
+    {"baccount": "PR83RX8HIYLX", "aaccount": "KFMJJUIIWBEO", "brand": "Godrej No. 1 Grocery"},
+    {"baccount": "PR83RX8HIYLX", "aaccount": "G6QNRWQT32XH", "brand": "Cinthol Nationals"},
+    {"baccount": "PR83RX8HIYLX", "aaccount": "2LEFMRE1IKA4", "brand": "Good knight Grocery"},
+    {"baccount": "PR83RX8HIYLX", "aaccount": "Y7TQL54CL7SR", "brand": "Good knight Nationals"},
+    {"baccount": "PR83RX8HIYLX", "aaccount": "BRBAXN6KS9EV", "brand": "Expert Grocery"},
+    {"baccount": "PR83RX8HIYLX", "aaccount": "X2E0Y0M08PVQ", "brand": "Genteel Nationals"},
+    {"baccount": "PR83RX8HIYLX", "aaccount": "0J0ATUB4X43G", "brand": "Godrej Aer Grocery"},
+    {"baccount": "PR83RX8HIYLX", "aaccount": "KWHA1YD3JIBJ", "brand": "Expert Nationals"},
+    {"baccount": "PR83RX8HIYLX", "aaccount": "77W12KF7HW7S", "brand": "Hit Grocery"},
+    {"baccount": "PR83RX8HIYLX", "aaccount": "28KC2C2ZE3W5", "brand": "Godrej Fab Grocery"},
+    {"baccount": "PR83RX8HIYLX", "aaccount": "P3EKJ4KIV6VA", "brand": "Hit Nationals"},
+    {"baccount": "PR83RX8HIYLX", "aaccount": "2LEFMRE1IKA4", "brand": "Godrej No.1 Nationals"},
+    {"baccount": "PR83RX8HIYLX", "aaccount": "75FKCW7PXX4N", "brand": "Cinthol Grocery"},
+    {"baccount": "PR83RX8HIYLX", "aaccount": "UH0ND54US2AL", "brand": "Godrej Aer Nationals"},
+    {"baccount": "PR83RX8HIYLX", "aaccount": "DWONWCO5L46V", "brand": "Genteel Grocery"},
+    {"baccount": "K4ZBBTIP0R", "aaccount": "WX40F7MLW5VX", "brand": "Park Avenue Grocery"},
+    {"baccount": "K4ZBBTIP0R", "aaccount": "ENSAR2MNLFGS", "brand": "Kamasutra Grocery"},
+    {"baccount": "K4ZBBTIP0R", "aaccount": "J66C5M8GUNCN", "brand": "Park Avenue Nationals"},
+    {"baccount": "K4ZBBTIP0R", "aaccount": "GGRG6OJKHMNQ", "brand": "Kamasutra Nationals"}
+  ];
+
+  // Available operators
+  const availableOperators = ["Amazon", "Flipkart", "Zepto", "Swiggy", "Blinkit"];
+
+  // Get unique brands for dropdown
+  const uniqueBrands = React.useMemo(() => {
+    const brands = [...new Set(accountCombinations.map(combo => combo.brand))];
+    return brands.sort();
+  }, []);
 
   const getPageHeading = () => {
     const path = location.pathname.replace("/", "");
@@ -30,20 +65,45 @@ const Header = () => {
   };
 
   const [showSelectedOperator, setShowSelectedOperator] = useState(
-    operatorType ? operatorType : OPERATOR.BLINKIT
+    operatorType ? operatorType : (OPERATOR.BLINKIT || "Amazon")
   );
+  const [selectedBrand, setSelectedBrand] = useState(brandType);
   const [showHeaderLogo, setShowHeaderLogo] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
+  // Update URL when operator changes
   useEffect(() => {
-    navigate(`${window.location.pathname}?operator=${showSelectedOperator}`);
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.set("operator", showSelectedOperator);
+    setSearchParams(newSearchParams);
   }, [showSelectedOperator]);
 
-  {/*useEffect(() => {
-    const queryParams = new URLSearchParams(location.search);
-    const operatorType = queryParams.get("operator") || OPERATOR.AMAZON;
-    setShowSelectedOperator(operatorType);
-  }, [location.search]);*/}
+  // Handle brand selection change
+  const handleBrandChange = (event) => {
+    const brandValue = event.target.value;
+    setSelectedBrand(brandValue);
+    
+    const newSearchParams = new URLSearchParams(searchParams);
+    if (brandValue) {
+      newSearchParams.set('brand', brandValue);
+    } else {
+      newSearchParams.delete('brand');
+    }
+    setSearchParams(newSearchParams);
+  };
+
+  // Initialize from URL params
+  useEffect(() => {
+    const operator = searchParams.get("operator");
+    const brand = searchParams.get("brand");
+    
+    if (operator) {
+      setShowSelectedOperator(operator);
+    }
+    if (brand) {
+      setSelectedBrand(brand);
+    }
+  }, [searchParams]);
 
   const options = [{ label: "GCPL", value: "GCPL" }];
 
@@ -90,28 +150,69 @@ const Header = () => {
           </div>
         </div>
         <div className="d-flex actions-con">
-          {/*<button className="btn btn-white border h-100">
-            <ShareIcon iconWidth="15" iconHeight="15" iconColor="#000" />
-  </button>*/}
+          {/* Operator Dropdown */}
           <Dropdown className="operator-selected-tab">
             <Dropdown.Toggle variant="white" id="dropdown-basic">
               {showSelectedOperator}
             </Dropdown.Toggle>
-
             <Dropdown.Menu>
-
-            
-             
-               <OperatorList
-                showSelectedOperator={showSelectedOperator}
-                setShowSelectedOperator={setShowSelectedOperator}
-                selectedOperator={OPERATOR.FLIPKART}
-              />
-            
-               
-              
+              {availableOperators.map((operator) => (
+                <OperatorList
+                  key={operator}
+                  showSelectedOperator={showSelectedOperator}
+                  setShowSelectedOperator={setShowSelectedOperator}
+                  selectedOperator={operator}
+                />
+              ))}
             </Dropdown.Menu>
           </Dropdown>
+
+          {/* Brand Dropdown - now visible on all pages */}
+          <Box sx={{ minWidth: 200, mx: 1 }}>
+            <FormControl fullWidth size="small">
+              <InputLabel 
+                id="brand-select-label"
+                sx={{ 
+                  fontSize: '0.875rem',
+                  backgroundColor: 'white',
+                  px: 0.5
+                }}
+              >
+                Select Brand
+              </InputLabel>
+              <Select
+                labelId="brand-select-label"
+                id="brand-select"
+                value={selectedBrand}
+                label="Select Brand"
+                onChange={handleBrandChange}
+                sx={{
+                  height: '36px',
+                  backgroundColor: 'white',
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#ddd',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#0081ff',
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: '#0081ff',
+                  }
+                }}
+              >
+                <MenuItem value="">
+                  <em>All Brands</em>
+                </MenuItem>
+                {uniqueBrands.map((brand) => (
+                  <MenuItem key={brand} value={brand}>
+                    {brand}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+
+          {/* Client Select */}
           <SelectFieldComponent
             isFieldLabelRequired={false}
             areaLabel="user-detail"
@@ -120,9 +221,10 @@ const Header = () => {
             options={options}
             onChange={(e) => setUserCountryData(e.target.value)}
           />
+
+          {/* Date Picker */}
           <div className="col text-end position-relative">
             <Box className="d-inline-flex align-items-center gap-2">
-              {/* Toggle Button */}
               <Button
                 variant="contained"
                 sx={{ color: "#0081ff", background: "#0081ff1a" }}
@@ -146,8 +248,7 @@ const Header = () => {
 };
 
 const OperatorList = (props) => {
-  const { setShowSelectedOperator, selectedOperator } =
-    props;
+  const { setShowSelectedOperator, selectedOperator } = props;
   return (
     <Dropdown.Item onClick={() => setShowSelectedOperator(selectedOperator)}>
       {selectedOperator}

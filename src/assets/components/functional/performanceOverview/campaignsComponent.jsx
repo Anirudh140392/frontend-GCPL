@@ -2,7 +2,7 @@ import React, { useContext, useState, useEffect, useMemo, useRef, useImperativeH
 import MuiDataTableComponent from "../../common/muidatatableComponent";
 import '../../../styles/campaignsComponent/campaignsComponent.less';
 import overviewContext from "../../../../store/overview/overviewContext";
-import { Switch, Box, Button, Snackbar, Alert } from "@mui/material";
+import { Switch, Box, Button, Snackbar, Alert, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import { Dialog, DialogActions, DialogContent, DialogTitle, CircularProgress } from "@mui/material";
 import { useSearchParams } from "react-router";
 import ColumnPercentageDataComponent from "../../common/columnPercentageDataComponent";
@@ -30,8 +30,9 @@ const CampaignsComponent = (props, ref) => {
         adType: null 
     });
     const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+    const [selectedBrand, setSelectedBrand] = useState("");
 
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const operator = searchParams.get("operator");
 
     const STATUS_OPTIONS = [
@@ -224,6 +225,28 @@ const CampaignsComponent = (props, ref) => {
         }
     ];
 
+    // Normalize brands from context to a flat list of strings
+    const normalizedBrands = useMemo(() => {
+        const source = brands;
+        if (!source) return [];
+        if (Array.isArray(source)) {
+            if (source.length === 0) return [];
+            if (typeof source[0] === "string") return source;
+            return source
+                .map((item) => item?.brand_name || item?.brand || item?.name)
+                .filter(Boolean);
+        }
+        if (Array.isArray(source?.data)) {
+            const arr = source.data;
+            if (arr.length === 0) return [];
+            if (typeof arr[0] === "string") return arr;
+            return arr
+                .map((item) => item?.brand_name || item?.brand || item?.name)
+                .filter(Boolean);
+        }
+        return [];
+    }, [brands]);
+
     const getCampaignsData = async (forceRefresh = false) => {
         if (!operator) return;
 
@@ -249,7 +272,10 @@ const CampaignsComponent = (props, ref) => {
 
         try {
             const ts = forceRefresh ? `&_=${Date.now()}` : "";
-            const url = `https://react-api-script.onrender.com/gcpl/campaign?start_date=${startDate}&end_date=${endDate}&platform=${operator}${ts}`;
+            let url = `https://react-api-script.onrender.com/gcpl/campaign?start_date=${startDate}&end_date=${endDate}&platform=${operator}${ts}`;
+            if (selectedBrand && typeof selectedBrand === "string") {
+                url += `&brand_name=${encodeURIComponent(selectedBrand)}`;
+            }
             const cacheKey = `cache:GET:${url}`;
 
             if (forceRefresh) {
@@ -315,7 +341,12 @@ const CampaignsComponent = (props, ref) => {
             }
             clearTimeout(timeout);
         }
-    }, [operator, dateRange]);
+    }, [operator, dateRange, selectedBrand]);
+
+    useEffect(() => {
+        // Ensure brands list is available for dropdown
+        try { getBrandsData(); } catch (_) {}
+    }, [operator]);
 
     const columns = useMemo(() => {
         if (operator === "Amazon") return CampaignsColumnAmazon;
@@ -331,7 +362,10 @@ const CampaignsComponent = (props, ref) => {
             const token = localStorage.getItem("accessToken");
             const startDate = formatDate(dateRange[0].startDate);
             const endDate = formatDate(dateRange[0].endDate);
-            const url = `https://react-api-script.onrender.com/gcpl/campaign_graph?start_date=${formatDate(startDate)}&end_date=${formatDate(endDate)}&platform=${operator}&campaign_id=${campaignId}`;
+            let url = `https://react-api-script.onrender.com/gcpl/campaign_graph?start_date=${formatDate(startDate)}&end_date=${formatDate(endDate)}&platform=${operator}&campaign_id=${campaignId}`;
+            if (selectedBrand && typeof selectedBrand === "string") {
+                url += `&brand_name=${encodeURIComponent(selectedBrand)}`;
+            }
             const cacheKey = `cache:GET:${url}`;
 
             const cached = getCache(cacheKey);
@@ -383,7 +417,12 @@ const CampaignsComponent = (props, ref) => {
                 ad_type: adType
             };
 
-            const response = await fetch(`https://react-api-script.onrender.com/gcpl/campaign-play-pause?platform=${operator}`, {
+            let playPauseUrl = `https://react-api-script.onrender.com/gcpl/campaign-play-pause?platform=${operator}`;
+            if (selectedBrand && typeof selectedBrand === "string") {
+                playPauseUrl += `&brand_name=${encodeURIComponent(selectedBrand)}`;
+            }
+
+            const response = await fetch(playPauseUrl, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -428,8 +467,25 @@ const CampaignsComponent = (props, ref) => {
         setSnackbar({ ...snackbar, open: false });
     };
 
+    const handleBrandChange = (event) => {
+        const value = event.target.value || "";
+        setSelectedBrand(value);
+        const next = new URLSearchParams(searchParams);
+        if (value) next.set("brand", value); else next.delete("brand");
+        setSearchParams(next);
+    };
+
+    useEffect(() => {
+        const brandFromUrl = searchParams.get("brand");
+        if (brandFromUrl && brandFromUrl !== selectedBrand) {
+            setSelectedBrand(brandFromUrl);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     return (
         <React.Fragment>
+            {/* Brand Filter controlled via Header dropdown (URL param 'brand') */}
             <Dialog open={confirmation.show} onClose={() => setConfirmation({ show: false, campaignId: null, campaignType: null, adType: null })}>
                 <DialogTitle>Confirm Status Change</DialogTitle>
                 <DialogContent>

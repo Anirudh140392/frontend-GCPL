@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useRef } from "react";
 import { Accordion } from "react-bootstrap";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useSearchParams } from "react-router";
 import AvatarIcon from "./assets/icons/navbar/avatarIcon";
 import BlockersIcon from "./assets/icons/navbar/blockersIcon";
 import GoToInsightIcon from "./assets/icons/navbar/goToInsightIcon";
@@ -93,10 +93,13 @@ const RedirectLink = ({ url, label, pathName, onClick }) => {
 
 const Navbar = () => {
     const location = useLocation();
+    const [searchParams] = useSearchParams();
     const [operatorTypeParams, setOperatorTypeParams] = useState(location.search);
     const [operatorName, setoperatorName] = useState("");
+    const [selectedBrand, setSelectedBrand] = useState("");
     const [pathName, setPathName] = useState(`/`);
     const [walletBalance, setWalletBalance] = useState("N/A")
+    const [walletLabel, setWalletLabel] = useState("Wallet Balance")
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState(null);
     const navigate = useNavigate();
@@ -136,6 +139,7 @@ const Navbar = () => {
             setPathName(`${location.pathname}${location.search}`);
             const urlParams = new URLSearchParams(location.search);
             setoperatorName(urlParams.get("operator") || "");
+            setSelectedBrand(urlParams.get("brand") || "");
         } catch (error) {
             console.error('Error processing location:', error);
             setError('Navigation error occurred');
@@ -152,6 +156,7 @@ const Navbar = () => {
 
                 if (operatorName !== "Flipkart") {
                     setWalletBalance("N/A");
+                    setWalletLabel("Wallet Balance");
                     return;
                 }
 
@@ -159,45 +164,28 @@ const Navbar = () => {
                 if (!accessToken) {
                     console.warn("No access token found");
                     setWalletBalance("N/A");
+                    setWalletLabel("Wallet Balance");
                     return;
                 }
 
                 const controller = new AbortController();
                 abortControllerRef.current = controller;
 
-                // Define default date range if dateRange is not available
-                let startDate, endDate;
-                
-                try {
-                    // If dateRange exists (from props or context), use it
-                    if (typeof dateRange !== 'undefined' && dateRange && dateRange[0]) {
-                        startDate = formatDate(dateRange[0].startDate);
-                        endDate = formatDate(dateRange[0].endDate);
-                    } else {
-                        // Fallback to default 30-day range
-                        const today = new Date();
-                        const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
-                        startDate = formatDate(thirtyDaysAgo);
-                        endDate = formatDate(today);
-                    }
-                } catch (dateError) {
-                    console.warn('Date processing error, using defaults:', dateError);
-                    const today = new Date();
-                    const thirtyDaysAgo = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
-                    startDate = formatDate(thirtyDaysAgo);
-                    endDate = formatDate(today);
+                // Build URL with brand parameter if selected
+                let url = `https://react-api-script.onrender.com/gcpl/wallet_balance?platform=${operatorName}`;
+                if (selectedBrand) {
+                    url += `&brand_name=${encodeURIComponent(selectedBrand)}`;
                 }
 
-                // Use operatorName instead of undefined 'operator'
-                const url = `https://react-api-script.onrender.com/gcpl/wallet_balance?platform=${operatorName}`;
                 const cacheKey = `cache:GET:${url}`;
 
                 // Check cache first
                 try {
                     const cached = getCache(cacheKey);
                     if (cached) {
-                        const val = cached?.data?.wallet_balance;
-                        setWalletBalance(val !== undefined ? formatCurrency(val) : "N/A");
+                        const { balance, label } = extractWalletBalance(cached, selectedBrand);
+                        setWalletBalance(balance);
+                        setWalletLabel(label);
                         setLoading(false);
                         return;
                     }
@@ -220,14 +208,16 @@ const Navbar = () => {
                     { ttlMs: 2 * 60 * 1000, cacheKey }
                 );
 
-                const val = response.data?.data?.wallet_balance;
-                setWalletBalance(val !== undefined ? formatCurrency(val) : "N/A");
+                const { balance, label } = extractWalletBalance(response.data, selectedBrand);
+                setWalletBalance(balance);
+                setWalletLabel(label);
 
             } catch (err) {
                 if (err.name !== 'AbortError') {
                     console.error("Wallet fetch failed:", err);
                     setError('Failed to fetch wallet balance');
                     setWalletBalance("N/A");
+                    setWalletLabel("Wallet Balance");
                     
                     // Log additional error details for debugging
                     if (err.response) {
@@ -247,7 +237,55 @@ const Navbar = () => {
         if (operatorName) {
             fetchWalletBalance();
         }
-    }, [operatorName]);
+    }, [operatorName, selectedBrand]); // Added selectedBrand to dependencies
+
+    // Helper function to extract wallet balance based on response structure
+    const extractWalletBalance = (data, brandName) => {
+        try {
+            if (!data || !data.data) {
+                return { balance: formatCurrency(0), label: "Wallet Balance" };
+            }
+
+            // If brand is selected, extract from brand_wallets
+            if (brandName && data.data.brand_wallets) {
+                const brandWallet = data.data.brand_wallets[brandName];
+                if (brandWallet && brandWallet.length > 0) {
+                    const balance = brandWallet[0].balance;
+                    return { 
+                        balance: formatCurrency(balance), 
+                        label: `${brandName} Balance` 
+                    };
+                }
+                // If brand not found in response, show 0
+                return { 
+                    balance: formatCurrency(0), 
+                    label: `${brandName} Balance` 
+                };
+            }
+
+            // If no brand selected, use total_balance
+            if (data.data.total_balance !== undefined) {
+                return { 
+                    balance: formatCurrency(data.data.total_balance), 
+                    label: "Total Wallet Balance" 
+                };
+            }
+
+            // Fallback for old API structure
+            if (data.data.wallet_balance !== undefined) {
+                return { 
+                    balance: formatCurrency(data.data.wallet_balance), 
+                    label: "Wallet Balance" 
+                };
+            }
+
+            return { balance: formatCurrency(0), label: "Wallet Balance" };
+
+        } catch (error) {
+            console.error('Error extracting wallet balance:', error);
+            return { balance: formatCurrency(0), label: "Wallet Balance" };
+        }
+    };
 
     const onLogoutClick = () => {
         try {
@@ -326,7 +364,7 @@ const Navbar = () => {
                         iconColor="#fff"
                     />
                     <div className="profile-user-data">
-                        <h3>Wallet Balance</h3>
+                        <h3>{walletLabel}</h3>
                         <h2 className="mt-2 mb-0">
                             {loading ? "Loading..." : walletBalance}
                         </h2>

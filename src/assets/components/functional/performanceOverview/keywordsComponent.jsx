@@ -1,7 +1,7 @@
 import React, { useEffect, useContext, useState, useMemo, useRef } from "react";
 import MuiDataTableComponent from "../../common/muidatatableComponent";
 import '../../../styles/keywordsComponent/keywordsComponent.less';
-import { Typography, Snackbar, Alert, Button, Switch,Box } from "@mui/material";
+import { Typography, Snackbar, Alert, Button, Switch, Box, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 import overviewContext from "../../../../store/overview/overviewContext";
 import { useSearchParams, useNavigate } from "react-router";
 import ColumnPercentageDataComponent from "../../common/columnPercentageDataComponent";
@@ -11,6 +11,7 @@ import { Dialog, DialogActions, DialogContent, DialogTitle, CircularProgress } f
 import { cachedFetch } from "../../../../services/cachedFetch";
 import { getCache } from "../../../../services/cacheUtils";
 import NewPercentageDataComponent from "../../common/newPercentageDataComponent";
+
 const KeywordsComponent = () => {
 
     const { dateRange, getBrandsData, brands, formatDate, campaignName } = useContext(overviewContext)
@@ -21,10 +22,42 @@ const KeywordsComponent = () => {
     const [isLoading, setIsLoading] = useState(false)
     const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
     const [confirmation, setConfirmation] = useState({ show: false, campaignType: null, keywordId: null, targetId: null, adGroupId: null, campaignId: null });
+    const [selectedBrand, setSelectedBrand] = useState(''); // New state for selected brand
 
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const operator = searchParams.get("operator");
     const navigate = useNavigate()
+
+    // Brand account combinations
+    const accountCombinations = [
+        {"baccount": "PR83RX8HIYLX", "aaccount": "BGHM2A61UYC1", "brand": "Godrej Fab Nationals"},
+        {"baccount": "PR83RX8HIYLX", "aaccount": "OQHE4X5E9H9Z", "brand": "Ezee Grocery"},
+        {"baccount": "PR83RX8HIYLX", "aaccount": "KFMJJUIIWBEO", "brand": "Godrej No. 1 Grocery"},
+        {"baccount": "PR83RX8HIYLX", "aaccount": "G6QNRWQT32XH", "brand": "Cinthol Nationals"},
+        {"baccount": "PR83RX8HIYLX", "aaccount": "2LEFMRE1IKA4", "brand": "Good knight Grocery"},
+        {"baccount": "PR83RX8HIYLX", "aaccount": "Y7TQL54CL7SR", "brand": "Good knight Nationals"},
+        {"baccount": "PR83RX8HIYLX", "aaccount": "BRBAXN6KS9EV", "brand": "Expert Grocery"},
+        {"baccount": "PR83RX8HIYLX", "aaccount": "X2E0Y0M08PVQ", "brand": "Genteel Nationals"},
+        {"baccount": "PR83RX8HIYLX", "aaccount": "0J0ATUB4X43G", "brand": "Godrej Aer Grocery"},
+        {"baccount": "PR83RX8HIYLX", "aaccount": "KWHA1YD3JIBJ", "brand": "Expert Nationals"},
+        {"baccount": "PR83RX8HIYLX", "aaccount": "77W12KF7HW7S", "brand": "Hit Grocery"},
+        {"baccount": "PR83RX8HIYLX", "aaccount": "28KC2C2ZE3W5", "brand": "Godrej Fab Grocery"},
+        {"baccount": "PR83RX8HIYLX", "aaccount": "P3EKJ4KIV6VA", "brand": "Hit Nationals"},
+        {"baccount": "PR83RX8HIYLX", "aaccount": "2LEFMRE1IKA4", "brand": "Godrej No.1 Nationals"},
+        {"baccount": "PR83RX8HIYLX", "aaccount": "75FKCW7PXX4N", "brand": "Cinthol Grocery"},
+        {"baccount": "PR83RX8HIYLX", "aaccount": "UH0ND54US2AL", "brand": "Godrej Aer Nationals"},
+        {"baccount": "PR83RX8HIYLX", "aaccount": "DWONWCO5L46V", "brand": "Genteel Grocery"},
+        {"baccount": "K4ZBBTIP0R", "aaccount": "WX40F7MLW5VX", "brand": "Park Avenue Grocery"},
+        {"baccount": "K4ZBBTIP0R", "aaccount": "ENSAR2MNLFGS", "brand": "Kamasutra Grocery"},
+        {"baccount": "K4ZBBTIP0R", "aaccount": "J66C5M8GUNCN", "brand": "Park Avenue Nationals"},
+        {"baccount": "K4ZBBTIP0R", "aaccount": "GGRG6OJKHMNQ", "brand": "Kamasutra Nationals"}
+    ];
+
+    // Get unique brands for dropdown
+    const uniqueBrands = useMemo(() => {
+        const brands = [...new Set(accountCombinations.map(combo => combo.brand))];
+        return brands.sort();
+    }, []);
 
     const getKeywordsData = async () => {
         if (!operator) return;
@@ -50,7 +83,12 @@ const KeywordsComponent = () => {
         const endDate = formatDate(dateRange[0].endDate);
 
         try {
-            const url = `https://react-api-script.onrender.com/gcpl/keyword?start_date=${startDate}&end_date=${endDate}&platform=${operator}`;
+            // Build URL with brand parameter if selected
+            let url = `https://react-api-script.onrender.com/gcpl/keyword?start_date=${startDate}&end_date=${endDate}&platform=${operator}`;
+            if (selectedBrand) {
+                url += `&brand_name=${encodeURIComponent(selectedBrand)}`;
+            }
+
             const cacheKey = `cache:GET:${url}`;
 
             const cached = getCache(cacheKey);
@@ -100,7 +138,7 @@ const KeywordsComponent = () => {
             }
             clearTimeout(timeout);
         }
-    }, [operator, dateRange, campaignName]);
+    }, [operator, dateRange, campaignName, selectedBrand]); // Added selectedBrand to dependencies
 
     useEffect(() => {
         getBrandsData()
@@ -113,549 +151,34 @@ const KeywordsComponent = () => {
         }
     }, []);
 
+    // Handle brand selection change
+    const handleBrandChange = (event) => {
+        const brandValue = event.target.value;
+        setSelectedBrand(brandValue);
+        
+        // Update URL search params to include brand selection
+        const newSearchParams = new URLSearchParams(searchParams);
+        if (brandValue) {
+            newSearchParams.set('brand', brandValue);
+        } else {
+            newSearchParams.delete('brand');
+        }
+        setSearchParams(newSearchParams);
+    };
+
+    // Initialize brand from URL params on component mount
+    useEffect(() => {
+        const brandFromUrl = searchParams.get('brand');
+        if (brandFromUrl) {
+            setSelectedBrand(brandFromUrl);
+        }
+    }, []);
+
     const handleToggle = (campaignType, keywordId, targetId, adGroupId, campaignId) => {
         setConfirmation({ show: true, campaignType, keywordId, targetId, adGroupId, campaignId });
     };
 
-    const KeywordsColumnAmazon = [
-        {
-            field: "keyword_x",
-            headerName: "TARGET",
-            minWidth: 150,
-            renderCell: (params) => (
-                <div className="text-icon-div cursor-pointer" onClick={() => handleKeywordClick(params.row.keyword_x, params.row.campaign_id_x)}>
-                    <Typography className="redirect" variant="body2">{params.row.keyword_x}</Typography>
-                </div>
-            ),
-        },
-         /*{
-            field: "match_type_x",
-            headerName: "MATCH TYPE",
-            minWidth: 150,
-            align: "left",
-            headerAlign: "left",
-        },*/
-         
-
-        {
-            field: "keyword_bid_x",
-            headerName: "BID",
-            minWidth: 150,
-            renderCell: (params) => (
-                <BidCell
-                    value={params.row.keyword_bid_x}
-                    campaignId={params.row.campaign_id_x}
-                    targetId={params.row.targeting_id_x}
-                    campaignType={params.row.campaign_type_x}
-                    adGroupId={params.row.ad_group_id_x}
-                    keywordId={params.row.keyword_id_x}
-                    platform={operator}
-                    /* parent (or cell renderer) */
-                    onUpdate={(
-                        campaignId,
-                        targetId,
-                        campaignType,
-                        adGroupId,
-                        keywordId,
-                        newBid
-                    ) => {
-                        console.log('Updating keyword bid:', {
-                            campaignId,
-                            targetId,
-                            campaignType,
-                            adGroupId,
-                            keywordId,
-                            newBid,
-                        });
-
-                        setKeywordsData(prevData => {
-                            const updatedData = {
-                                ...prevData,
-                                data: prevData.data.map(row =>
-                                    row.campaign_id_x === campaignId &&
-                                        row.targeting_id_x === targetId &&
-                                        row.campaign_type_x === campaignType &&
-                                        row.ad_group_id_x === adGroupId &&
-                                        row.keyword_id_x === keywordId
-                                        ? { ...row, keyword_bid_x: newBid }
-                                        : row
-                                ),
-                            };
-
-                            console.log('Updated keywordsData:', updatedData);
-                            return updatedData;
-                        });
-                    }}
-                    onSnackbarOpen={handleSnackbarOpen}
-                />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "status",
-            headerName: "STATUS",
-            minWidth: 100,
-            renderCell: (params) => {
-                if (updatingKeywords[params.row.campaign_id_x] && updatingKeywords[params.row.campaign_type_x] && updatingKeywords[params.row.keyword_id_x] && updatingKeywords[params.row.targeting_id_x] && updatingKeywords[params.row.ad_group_id_x]) {
-                    return <Box sx={{ height: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}><CircularProgress size={24} /></Box>;
-                }
-                return (
-                    <Switch
-                        disabled={params.row.status === 2}
-                        checked={params.row.status === 1}
-                        onChange={() => handleToggle(params.row.campaign_type_x, params.row.keyword_id_x, params.row.targeting_id_x, params.row.ad_group_id_x, params.row.campaign_id_x,)}
-                    />
-                )
-            },
-            type: "singleSelect",
-        },
-        /*{ field: "ad_group_name", headerName: "AD GROUP", minWidth: 150, },*/
-        {
-            field: "spend_x",
-            headerName: "SPENDS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.spend_x} percentValue={params.row.spend_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "spend_diff",
-            headerName: "SPENDS % CHANGE",
-            hideable: false
-        },
-        {
-            field: "sales_x",
-            headerName: "SALES",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.sales_x} percentValue={params.row.sales_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "sales_diff",
-            headerName: "SALES % CHANGE",
-            hideable: false
-        },
-        {
-            field: "impressions_x",
-            headerName: "IMPRESSIONS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.impressions_x} percentValue={params.row.impressions_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "clicks_x",
-            headerName: "CLICKS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.clicks_x} percentValue={params.row.clicks_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-         {
-            field: "orders_x",
-            headerName: "ORDERS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.orders_x} percentValue={params.row.orders_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "ctr_x",
-            headerName: "CTR",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.ctr_x} percentValue={params.row.ctr_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "ctr_diff",
-            headerName: "CTR % CHANGE",
-            hideable: false
-        },
-        {
-            field: "cpc_x",
-            headerName: "CPC",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.cpc_x} percentValue={params.row.cpc_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "cvr_x",
-            headerName: "CVR",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.cvr_x} percentValue={params.row.cvr_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "roas_x",
-            headerName: "ROAS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.roas_x} percentValue={params.row.roas_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "roas_diff",
-            headerName: "ROAS % CHANGE",
-            hideable: false
-        },
-         {
-            field: "acos_x",
-            headerName: "ACOS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.acos_x} percentValue={params.row.acos_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "aov_x",
-            headerName: "AOV",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.aov_x} percentValue={params.row.aov_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "campaign_name_x",
-            headerName: "CAMPAIGN",
-            minWidth: 300,
-        },
-        {
-            field: "ad_group_name_x",
-            headerName: "AD GROUP",
-            minWidth: 150,
-            align: "left",
-            headerAlign: "left",
-        },
-        /*{
-            field: "views",
-            headerName: "IMPRESSIONS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.views} percentValue={params.row.views_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "views_diff",
-            headerName: "IMPRESSIONS % CHANGE",
-            hideable: false
-        },
-        {
-            field: "clicks",
-            headerName: "CLICKS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.clicks} percentValue={params.row.clicks_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "clicks_diff",
-            headerName: "CLICKS % CHANGE",
-            hideable: false
-        },
-        {
-            field: "cpc",
-            headerName: "CPC",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.cpc} percentValue={params.row.cpc_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "cpc_diff",
-            headerName: "CPC % CHANGE",
-            hideable: false
-        },
-        {
-            field: "direct_orders",
-            headerName: "DIRECT ORDERS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.direct_orders} percentValue={params.row.direct_orders_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "direct_orders_diff",
-            headerName: "DIRECT ORDERS % CHANGE",
-            hideable: false
-        },
-        {
-            field: "indirect_orders",
-            headerName: "INDIRECT ORDERS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.indirect_orders} percentValue={params.row.indirect_orders_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "indirect_orders_diff",
-            headerName: "INDIRECT ORDERS % CHANGE",
-            hideable: false
-        },
-        {
-            field: "indirect_sales",
-            headerName: "INDIRECT SALES",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.indirect_sales} percentValue={params.row.indirect_sales_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "indirect_sales_diff",
-            headerName: "INDIRECT SALES % CHANGE",
-            hideable: false
-        },
-        {
-            field: "acos",
-            headerName: "ACOS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.acos} percentValue={params.row.acos_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "acos_diff",
-            headerName: "ACOS % CHANGE",
-            hideable: false
-        },
-        {
-            field: "roi_direct",
-            headerName: "DIRECT ROAS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.roi_direct} percentValue={params.row.roi_direct_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "roi_direct_diff",
-            headerName: "DIRECT ROAS % CHANGE",
-            hideable: false
-        },
-        {
-            field: "cvr",
-            headerName: "CVR",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.cvr} percentValue={params.row.cvr_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-
-        {
-            field: "cvr_diff",
-            headerName: "CVR % CHANGE",
-            hideable: false
-        },
-        {
-            field: "aov",
-            headerName: "AOV",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.aov} percentValue={params.row.aov_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "aov_diff",
-            headerName: "AOV % CHANGE",
-            hideable: false
-        },
-        { field: "ad_type", headerName: "AD TYPE", minWidth: 150, },*/
-    ];
-
-    const KeywordsColumnZepto = [
-        {
-            field: "keyword_name",
-            headerName: "TARGET",
-            minWidth: 150,
-            renderCell: (params) => (
-                <div className="text-icon-div cursor-pointer">
-                    <Typography variant="body2">{params.row.keyword_name}</Typography>
-                </div>
-            ),
-        },
-         { field: "match_type", headerName: "MATCH TYPE", minWidth: 150, headerAlign: "left", },
-        {
-            field: "cpc",
-            headerName: "BID",
-            minWidth: 150,
-            renderCell: (params) => (
-                <BidCell
-                    value={params.row.cpc}
-                    campaignId={params.row.campaign_id}
-                    platform={operator}
-                    keyword={params.row.keyword_name}
-                    matchType={params.row.match_type}
-                    onUpdate={(campaignId, keyword, newBid, matchType) => {
-                        console.log("Updating bid:", { campaignId, keyword, newBid, matchType });
-                        setKeywordsData(prevData => {
-                            const updatedData = {
-                                ...prevData,
-                                data: prevData.data.map(row =>
-                                    row.campaign_id === campaignId &&
-                                        row.keyword_name === keyword &&
-                                        row.match_type === matchType
-                                        ? { ...row, cpc: newBid }
-                                        : row
-                                )
-                            };
-                            console.log("Updated keywordsData:", updatedData);
-                            return updatedData;
-                        });
-                    }} onSnackbarOpen={handleSnackbarOpen}
-                />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "status",
-            headerName: "BID STATUS",
-            minWidth: 100,
-            renderCell: () => <Switch checked={1} />,
-        },
-        { field: "keyword_type", headerName: "KEYWORD TYPE", minWidth: 150, },
-        { field: "brand_name", headerName: "BRAND", minWidth: 150, type: "singleSelect", valueOptions: brands?.brands },
-                {
-            field: "impressions",
-            headerName: "IMPRESSIONS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.impressions} percentValue={params.row.impressions_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-         {
-            field: "clicks",
-            headerName: "CLICKS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.clicks} percentValue={params.row.clicks_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "spend",
-            headerName: "SPENDS",
-            minWidth: 170,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.spend} percentValue={params.row.spend_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-         {
-            field: "orders",
-            headerName: "ORDERS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.orders} percentValue={params.row.orders_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-
-        {
-            field: "revenue",
-            headerName: "SALES",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.revenue} percentValue={params.row.revenue_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-
-       
-         {
-            field: "ctr",
-            headerName: "CTR",
-            minWidth: 150,
-            renderCell: (params) => (
-                <NewPercentageDataComponent firstValue={params.row.ctr} secValue={params.row.ctr_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-         {
-            field: "aov",
-            headerName: "AOV",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.aov} percentValue={params.row.aov_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-          {
-            field: "cvr",
-            headerName: "CVR",
-            minWidth: 150,
-            renderCell: (params) => (
-                <NewPercentageDataComponent firstValue={params.row.cvr} secValue={params.row.cvr_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-
-        /*{
-            field: "direct_sales",
-            headerName: "DIRECT SALES",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.direct_sales} percentValue={params.row.direct_sales_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },*/
-
-        {
-            field: "roas",
-            headerName: "ROAS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.roas} percentValue={params.row.roas_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-
-        /*{
-            field: "atc",
-            headerName: "ATC",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.atc} percentValue={params.row.atc_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },*/
-
-
-       
-        /*{
-            field: "ad_type", headerName: "AD TYPE", minWidth: 150,
-        },*/
-        {
-            field: "campaign_name",
-            headerName: "CAMPAIGN",
-            minWidth: 300,
-        },
-    ];
-
-      const KeywordsColumnFlipkart = [
+    const KeywordsColumnFlipkart = [
         {
             field: "keyword_name",
             headerName: "TARGET",
@@ -776,184 +299,18 @@ const KeywordsComponent = () => {
             headerAlign: "left",
         },
 
-
-        
         {
             field: "campaign_name",
             headerName: "CAMPAIGN",
             minWidth: 300,
         },
     ];
-
-
-    const KeywordsColumnSwiggy = [
-        {
-            field: "keyword",
-            headerName: "TARGET",
-            minWidth: 150,
-            renderCell: (params) => (
-                <div className="text-icon-div cursor-pointer">
-                    <Typography variant="body2">{params.row.keyword}</Typography>
-                </div>
-            ),
-        },
-         { field: "match_type", headerName: "MATCH TYPE", minWidth: 150, headerAlign: "left", },
-        {
-            field: "ecpm",
-            headerName: "BID",
-            minWidth: 150,
-            renderCell: (params) => (
-                <BidCell
-                    value={params.row.ecpm}
-                    campaignId={params.row.campaign_id}
-                    platform={operator}
-                    keyword={params.row.keyword_name}
-                    matchType={params.row.match_type}
-                    onUpdate={(campaignId, keyword, newBid, matchType) => {
-                        console.log("Updating bid:", { campaignId, keyword, newBid, matchType });
-                        setKeywordsData(prevData => {
-                            const updatedData = {
-                                ...prevData,
-                                data: prevData.data.map(row =>
-                                    row.campaign_id === campaignId &&
-                                        row.keyword_name === keyword &&
-                                        row.match_type === matchType
-                                        ? { ...row, cpc: newBid }
-                                        : row
-                                )
-                            };
-                            console.log("Updated keywordsData:", updatedData);
-                            return updatedData;
-                        });
-                    }} onSnackbarOpen={handleSnackbarOpen}
-                />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        
-       
-        /*{ field: "brand_name", headerName: "BRAND", minWidth: 150, type: "singleSelect", valueOptions: brands?.brands },*/
-        {
-            field: "spend",
-            headerName: "SPENDS",
-            minWidth: 170,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.spend} percentValue={params.row.spend_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-
-        {
-            field: "sales",
-            headerName: "SALES",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.sales} percentValue={params.row.sales_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        /*{
-            field: "ecpm",
-            headerName: "CPM",
-            minWidth: 170,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.ecpm} percentValue={params.row.ecpm_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },*/
-
-
-
-        {
-            field: "ctr",
-            headerName: "CTR",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.ctr} percentValue={params.row.ctr_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "clicks",
-            headerName: "CLICKS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.clicks} percentValue={params.row.clicks_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-
-        /*{
-            field: "direct_sales",
-            headerName: "DIRECT SALES",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.direct_sales} percentValue={params.row.direct_sales_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },*/
-
-        {
-            field: "roi",
-            headerName: "ROAS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.roi} percentValue={params.row.roi_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-
-        /*{
-            field: "atc",
-            headerName: "ATC",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.atc} percentValue={params.row.atc_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },*/
-
-       
-        /*{
-            field: "ad_type", headerName: "AD TYPE", minWidth: 150,
-        },*/
-         {
-            field: "a2c",
-            headerName: "ATC",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.a2c} percentValue={params.row.a2c_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "a2c_rate",
-            headerName: "ATC RATE",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.a2c_rate} percentValue={params.row.a2c_rate_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-
-       
-        {
-            field: "campaign_name",
-            headerName: "CAMPAIGN",
-            minWidth: 300,
-        },
-    ];
-
-    useEffect(() => {
-        getBrandsData()
-    }, [operator])
 
     const columns = useMemo(() => {
         if (operator === "Amazon") return KeywordsColumnAmazon;
-
         if (operator === "Zepto") return KeywordsColumnZepto;
-         if (operator === "Flipkart") return KeywordsColumnFlipkart;
-         if (operator === "Swiggy") return KeywordsColumnSwiggy;
+        if (operator === "Flipkart") return KeywordsColumnFlipkart;
+        if (operator === "Swiggy") return KeywordsColumnSwiggy;
         return [];
     }, [operator, brands, updatingKeywords]);
 
@@ -962,14 +319,14 @@ const KeywordsComponent = () => {
             const token = localStorage.getItem("accessToken");
             const startDate = formatDate(dateRange[0].startDate);
             const endDate = formatDate(dateRange[0].endDate);
-            const params = new URLSearchParams({
-                end_date: formatDate(endDate),
-                platform: operator,
-                campaign_id: campaignId,
-                keyword: keywordName,
-                start_date: formatDate(startDate),
-            });
-            const response = await fetch(`https://react-api-script.onrender.com/gcpl/keyword_graph?start_date=${formatDate(startDate)}&end_date=${formatDate(endDate)}&platform=${operator}&campaign_id=${campaignId}&keyword=${keywordName}`, {
+            
+            // Build URL with brand parameter if selected
+            let url = `https://react-api-script.onrender.com/gcpl/keyword_graph?start_date=${formatDate(startDate)}&end_date=${formatDate(endDate)}&platform=${operator}&campaign_id=${campaignId}&keyword=${keywordName}`;
+            if (selectedBrand) {
+                url += `&brand_name=${encodeURIComponent(selectedBrand)}`;
+            }
+            
+            const response = await fetch(url, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
@@ -1021,6 +378,12 @@ const KeywordsComponent = () => {
                 ad_group_id: adGroupId,
                 campaign_id: campaignId
             });
+            
+            // Add brand parameter if selected
+            if (selectedBrand) {
+                params.append('brand_name', selectedBrand);
+            }
+            
             const response = await fetch(`https://react-api-script.onrender.com/gcpl/toggle_keyword_or_target_state?${params.toString()}`, {
                 method: "PUT",
                 headers: {
@@ -1061,6 +424,9 @@ const KeywordsComponent = () => {
             <TrendsModal
                 showTrendsModal={showTrendsModal}
                 setShowTrendsModal={setShowTrendsModal} />
+            
+            {/* Brand Filter controlled via Header dropdown (URL param 'brand') */}
+            
             <div className="shadow-box-con-keywords aggregated-view-con">
                 <div className="datatable-con-keywords">
                     <MuiDataTableComponent
