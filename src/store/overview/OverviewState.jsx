@@ -10,6 +10,8 @@ const OverviewState = (props) => {
 
     const [searchParams] = useSearchParams();
     const operator = searchParams.get("operator");
+    // Get selectedBrand from URL params
+    const selectedBrand = searchParams.get("brand") || "Cinthol Grocery";
 
     const [dateRange, setDateRange] = useState([
         {
@@ -25,7 +27,6 @@ const OverviewState = (props) => {
     const [brands, setBrands] = useState({})
 
     const [campaignName, setCampaignName] = useState("")
- const [selectedBrand, setSelectedBrand] = useState("Cinthol Grocery"); 
     const [overviewLoading, setOverviewLoading] = useState(false);
 
     const campaignSetter = (value) => {
@@ -45,9 +46,9 @@ const OverviewState = (props) => {
         const endDate = formatDate(dateRange[0].endDate);
 
         try {
-            const url = `${host}/gcpl/${endpoint}?start_date=${startDate}&end_date=${endDate}&platform=${operator}`;
+            let url = `${host}/gcpl/${endpoint}?start_date=${startDate}&end_date=${endDate}&platform=${operator}`;
             if (selectedBrand && typeof selectedBrand === "string") {
-                playPauseUrl += `&brand_name=${encodeURIComponent(selectedBrand)}`;
+                url += `&brand_name=${encodeURIComponent(selectedBrand)}`;
             }
             const cacheKey = `cache:GET:${url}`;
 
@@ -192,9 +193,10 @@ const OverviewState = (props) => {
             overviewLoading,
             formatDate,
             brands,
-            campaignName
+            campaignName,
+            selectedBrand // Add selectedBrand to context
         }),
-        [dateRange, overviewData, campaignSetter, overviewLoading, campaignName, brands]
+        [dateRange, overviewData, campaignSetter, overviewLoading, campaignName, brands, selectedBrand, getOverviewData, getBrandsData]
     );
 
     return (
@@ -204,4 +206,4 @@ const OverviewState = (props) => {
     )
 }
 
-export default OverviewState
+export default OverviewState;

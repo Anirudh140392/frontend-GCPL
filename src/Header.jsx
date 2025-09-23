@@ -168,50 +168,56 @@ const Header = () => {
             </Dropdown.Menu>
           </Dropdown>
 
-          {/* Brand Dropdown - now visible on all pages */}
-          <Box sx={{ minWidth: 200, mx: 1 }}>
-            <FormControl fullWidth size="small">
-              <InputLabel 
-                id="brand-select-label"
-                sx={{ 
-                  fontSize: '0.875rem',
-                  backgroundColor: 'white',
-                  px: 0.5
-                }}
-              >
-                Select Brand
-              </InputLabel>
-              <Select
-                labelId="brand-select-label"
-                id="brand-select"
-                value={selectedBrand}
-                label="Select Brand"
-                onChange={handleBrandChange}
-                sx={{
-                  height: '36px',
-                  backgroundColor: 'white',
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#ddd',
-                  },
-                  '&:hover .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#0081ff',
-                  },
-                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                    borderColor: '#0081ff',
-                  }
-                }}
-              >
-                <MenuItem value="">
-                  <em>All Brands</em>
-                </MenuItem>
-                {uniqueBrands.map((brand) => (
-                  <MenuItem key={brand} value={brand}>
-                    {brand}
+          {/* Brand Dropdown - only show on home/overview/campaigns/keywords/products pages */}
+          {(location.pathname === "/" ||
+            location.pathname === "/performance-overview" ||
+            location.pathname === "/campaigns" ||
+            location.pathname === "/keywords" ||
+            location.pathname === "/products") && (
+            <Box sx={{ minWidth: 200, mx: 1 }}>
+              <FormControl fullWidth size="small">
+                <InputLabel
+                  id="brand-select-label"
+                  sx={{
+                    fontSize: '0.875rem',
+                    backgroundColor: 'white',
+                    px: 0.5
+                  }}
+                >
+                  Select Brand
+                </InputLabel>
+                <Select
+                  labelId="brand-select-label"
+                  id="brand-select"
+                  value={selectedBrand}
+                  label="Select Brand"
+                  onChange={handleBrandChange}
+                  sx={{
+                    height: '36px',
+                    backgroundColor: 'white',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#ddd',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#0081ff',
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#0081ff',
+                    }
+                  }}
+                >
+                  <MenuItem value="">
+                    <em>All Brands</em>
                   </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Box>
+                  {uniqueBrands.map((brand) => (
+                    <MenuItem key={brand} value={brand}>
+                      {brand}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+          )}
 
           {/* Client Select */}
           <SelectFieldComponent

@@ -30,10 +30,10 @@ const CampaignsComponent = (props, ref) => {
         adType: null 
     });
     const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
-    const [selectedBrand, setSelectedBrand] = useState("Cinthol Grocery"); // Initial state for brand
 
     const [searchParams, setSearchParams] = useSearchParams();
     const operator = searchParams.get("operator");
+    const selectedBrand = searchParams.get("brand") || "Cinthol Grocery";
 
     const STATUS_OPTIONS = [
         { value: 1, label: 'Active' },
@@ -330,9 +330,10 @@ const CampaignsComponent = (props, ref) => {
 
     const abortControllerRef = useRef(null);
 
-    useEffect(() => {
+   useEffect(() => {
         const timeout = setTimeout(() => {
-            getCampaignsData();
+            // Force refresh when brand changes to bypass cache
+            getCampaignsData(true);
         }, 100);
 
         return () => {
@@ -467,21 +468,6 @@ const CampaignsComponent = (props, ref) => {
         setSnackbar({ ...snackbar, open: false });
     };
 
-    const handleBrandChange = (event) => {
-        const value = event.target.value || "";
-        setSelectedBrand(value);
-        const next = new URLSearchParams(searchParams);
-        if (value) next.set("brand", value); else next.delete("brand");
-        setSearchParams(next);
-    };
-
-    useEffect(() => {
-        const brandFromUrl = searchParams.get("brand");
-        if (brandFromUrl && brandFromUrl !== selectedBrand) {
-            setSelectedBrand(brandFromUrl);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
 
     return (
         <React.Fragment>

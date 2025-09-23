@@ -22,10 +22,11 @@ const KeywordsComponent = () => {
     const [isLoading, setIsLoading] = useState(false)
     const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
     const [confirmation, setConfirmation] = useState({ show: false, campaignType: null, keywordId: null, targetId: null, adGroupId: null, campaignId: null });
-    const [selectedBrand, setSelectedBrand] = useState(''); // New state for selected brand
+   // Using brand from URL like ProductsComponent
 
     const [searchParams, setSearchParams] = useSearchParams();
     const operator = searchParams.get("operator");
+       const selectedBrand = searchParams.get("brand") || "Cinthol Grocery";
     const navigate = useNavigate()
 
     // Brand account combinations
@@ -133,6 +134,10 @@ const KeywordsComponent = () => {
 
     const abortControllerRef = useRef(null);
 
+    const handleRefresh = () => {
+        getKeywordsData(true);
+    };
+
     useEffect(() => {
         const timeout = setTimeout(() => {
             getKeywordsData();
@@ -145,6 +150,14 @@ const KeywordsComponent = () => {
             clearTimeout(timeout);
         }
     }, [operator, dateRange, campaignName, selectedBrand]); // Added selectedBrand to dependencies
+    useEffect(() => {
+        console.log("selectedBrand", selectedBrand);
+        if (selectedBrand) {
+            getKeywordsData(true);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedBrand]);
+
 
     useEffect(() => {
         getBrandsData()
@@ -157,28 +170,7 @@ const KeywordsComponent = () => {
         }
     }, []);
 
-    // Handle brand selection change
-    const handleBrandChange = (event) => {
-        const brandValue = event.target.value;
-        setSelectedBrand(brandValue);
-        
-        // Update URL search params to include brand selection
-        const newSearchParams = new URLSearchParams(searchParams);
-        if (brandValue) {
-            newSearchParams.set('brand', brandValue);
-        } else {
-            newSearchParams.delete('brand');
-        }
-        setSearchParams(newSearchParams);
-    };
-
-    // Initialize brand from URL params on component mount
-    useEffect(() => {
-        const brandFromUrl = searchParams.get('brand');
-        if (brandFromUrl) {
-            setSelectedBrand(brandFromUrl);
-        }
-    }, []);
+    // Brand selection is centralized in Header via URL params
 
     const handleToggle = (campaignType, keywordId, targetId, adGroupId, campaignId) => {
         setConfirmation({ show: true, campaignType, keywordId, targetId, adGroupId, campaignId });
@@ -434,6 +426,9 @@ const KeywordsComponent = () => {
             {/* Brand Filter controlled via Header dropdown (URL param 'brand') */}
             
             <div className="shadow-box-con-keywords aggregated-view-con">
+                <div className="px-3 py-2 d-flex justify-content-end">
+                    <Button variant="contained" size="small" onClick={handleRefresh}>Refresh</Button>
+                </div>
                 <div className="datatable-con-keywords">
                     <MuiDataTableComponent
                         isLoading={isLoading}

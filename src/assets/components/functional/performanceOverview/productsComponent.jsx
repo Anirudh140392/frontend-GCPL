@@ -874,6 +874,10 @@ const ProductsComponent = () => {
 
     const abortControllerRef = useRef(null);
 
+    const handleRefresh = () => {
+        getProductsData(true);
+    };
+
     useEffect(() => {
         const timeout = setTimeout(() => {
             getProductsData();
@@ -886,6 +890,14 @@ const ProductsComponent = () => {
             clearTimeout(timeout);
         }
     }, [operator, dateRange]);
+
+    // Add effect to trigger fresh API call on brand change
+    useEffect(() => {
+        if (selectedBrand) {
+            getProductsData(true); // force refresh and clear cache
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedBrand]);
 
     const handleSnackbarOpen = (message, severity) => {
         setSnackbar({ open: true, message, severity });
@@ -906,6 +918,9 @@ const ProductsComponent = () => {
                 </DialogActions>
             </Dialog>
             <div className="shadow-box-con-campaigns aggregated-view-con">
+                <div className="px-3 py-2 d-flex justify-content-end">
+                    <Button variant="contained" size="small" onClick={handleRefresh}>Refresh</Button>
+                </div>
                 <div className="datatable-con-campaigns">
                     <MuiDataTableComponent
                         isLoading={isLoading}

@@ -1,5 +1,6 @@
-import React, { useEffect } from "react";
-import { useContext,useMemo } from "react";
+import React, { useEffect, useRef } from "react";
+import { useContext, useMemo } from "react";
+import { Button } from "@mui/material";
 import OverviewFunnelChart from "./overview/overviewFunnelChart";
 import MuiDataTableComponent from "../../common/muidatatableComponent";
 import overviewContext from "../../../../store/overview/overviewContext";
@@ -12,11 +13,16 @@ import OnePercentageDataComponent from "../../common/onePercentageComponent";
 const OverviewComponent = () => {
     
     const dataContext = useContext(overviewContext)
-    const { overviewData, getOverviewData,getBrandsData, dateRange,campaignName, formatDate } = dataContext
-    //const { dateRange, getBrandsData, brands, formatDate, campaignName } = useContext(overviewContext)
+    const { overviewData, getOverviewData, getBrandsData, dateRange, campaignName, formatDate } = dataContext
     const { brands } = dataContext;
     const [searchParams] = useSearchParams();
     const operator = searchParams.get("operator");
+    
+    // Get selectedBrand from URL params like KeywordsComponent
+    const selectedBrand = searchParams.get("brand") || "Cinthol Grocery";
+    
+    // Add ref to handle abort controller for API calls
+    const abortControllerRef = useRef(null);
 
     const CategoryColumnsAmazon = [
         { field: "portfolio_name", headerName: "CATEGORY", minWidth: 150 },
@@ -483,12 +489,38 @@ const OverviewComponent = () => {
             return [];
         }, [operator, brands]);
 
-
+    // Modified useEffect to include selectedBrand and handle abort controller
     useEffect(() => {
-        if (localStorage.getItem("accessToken")) {
-            getOverviewData();
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
         }
-    }, [operator, dateRange, getOverviewData]);
+
+        const timeout = setTimeout(() => {
+            if (localStorage.getItem("accessToken")) {
+                getOverviewData();
+            }
+        }, 100);
+
+        return () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+            clearTimeout(timeout);
+        }
+    }, [operator, dateRange, selectedBrand, getOverviewData]); // Added selectedBrand to dependencies
+
+    // Additional useEffect to handle brand changes and force refresh
+    useEffect(() => {
+        console.log("selectedBrand", selectedBrand);
+        if (selectedBrand) {
+            getOverviewData(true); // Force refresh when brand changes
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedBrand]);
+
+    const handleRefresh = () => {
+        getOverviewData(true);
+    };
 
     const CTRWidget = ({ firstHeadingText, firstHeadingData, secondHeadingText, secondHeadingData, isSecondHeadingRequired = true }) => {
         return (
@@ -571,6 +603,9 @@ const OverviewComponent = () => {
                             </div>
                         </div>
                         <div className="agrregated-shadow-box-con aggregated-view-con mt-4">
+                            <div className="px-3 py-2 d-flex justify-content-end">
+                                <Button variant="contained" size="small" onClick={handleRefresh}>Refresh</Button>
+                            </div>
                             <div className="px-3 py-2 border-bottom">
                                 <div className="row">
                                     <div className="col-lg-6">
