@@ -415,13 +415,12 @@ const CampaignsComponent = (props, ref) => {
             
             const requestBody = {
                 campaign_id: campaignId,
-                ad_type: adType
+                ad_type: adType,
+                brand: selectedBrand // Added brand to match your API requirements
             };
 
-            let playPauseUrl = `https://react-api-script.onrender.com/gcpl/campaign-play-pause?platform=${operator}`;
-            if (selectedBrand && typeof selectedBrand === "string") {
-                playPauseUrl += `&brand_name=${encodeURIComponent(selectedBrand)}`;
-            }
+            // Updated URL to match your API endpoint
+            const playPauseUrl = `https://react-api-script.onrender.com/gcpl/campaign-play-pause?platform=${operator}`;
 
             const response = await fetch(playPauseUrl, {
                 method: "PUT",
@@ -432,23 +431,27 @@ const CampaignsComponent = (props, ref) => {
                 body: JSON.stringify(requestBody)
             });
 
-            if (!response.ok) throw new Error("Failed to update campaign status");
+            if (!response.ok) {
+                throw new Error(`Failed to update campaign status: ${response.status} ${response.statusText}`);
+            }
 
             const data = await response.json();
             console.log("Campaign status updated successfully", data);
 
-            // Update the local state to reflect the new status
+            // Update the local state based on the response status
             setCampaignsData(prevData => ({
                 ...prevData,
                 data: prevData.data.map(campaign =>
                     campaign.campaign_id === campaignId
-                        ? { ...campaign, status: newStatus }
+                        ? { ...campaign, status: data.status } // Use status from API response
                         : campaign
                 )
             }));
 
             setUpdatingCampaigns(prev => ({ ...prev, [campaignId]: false }));
-            handleSnackbarOpen("Campaign status updated successfully!", "success");
+            
+            // Use the message from API response
+            handleSnackbarOpen(data.message || "Campaign status updated successfully!", "success");
             
         } catch (error) {
             console.error("Error updating campaign status:", error);
