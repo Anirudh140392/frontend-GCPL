@@ -7,7 +7,9 @@ const BudgetCell = ({
   campaignId,
   platform,
   onUpdate,
-  onSnackbarOpen,
+  onSnackbarOpen, 
+  adType, // Add adType as a prop
+  brand, // Add brand as a prop
 }) => {
   const [budget, setBudget] = useState(value);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -38,7 +40,9 @@ const BudgetCell = ({
 
       const payload = {
         Campaign_ID: String(campaignId),
+        ad_type: adType,
         Budget: Number(budget),
+        brand: brand,
       };
 
       const response = await fetch(
@@ -56,9 +60,8 @@ const BudgetCell = ({
       if (!response.ok) throw new Error("Failed to update budget");
 
       const updatedData = await response.json();
-      onUpdate(campaignId, budget);
-
-      onSnackbarOpen("Budget updated successfully!", "success");
+        onUpdate(campaignId, budget);
+     onSnackbarOpen("Budget updated successfully!", "success");
     } catch (error) {
       console.error("Error updating budget:", error);
       onSnackbarOpen("Failed to update budget!", "error");

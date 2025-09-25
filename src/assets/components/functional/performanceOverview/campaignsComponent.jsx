@@ -64,7 +64,8 @@ const CampaignsComponent = (props, ref) => {
             field: "Budget",
             headerName: "BUDGET",
             minWidth: 200,
-            renderCell: (params) => <BudgetCell status={params.row.campaign_status} value={params.row.Budget} campaignId={params.row.campaign_id} endDate={params.row.end_date || null} platform={operator}
+            renderCell: (params) => <BudgetCell status={params.row.campaign_status} value={params.row.Budget} campaignId={params.row.campaign_id} adType= {params.row.ad_type}
+  brand= {params.row.brand} endDate={params.row.end_date || null} platform={operator}
                 onUpdate={(campaignId, newBudget) => {
                     console.log("Updating campaign:", campaignId, "New budget:", newBudget);
                     setCampaignsData(prevData => {
