@@ -14,9 +14,7 @@ import { getCache } from "../../../../services/cacheUtils";
 const ProductsComponent = () => {
 
     const dataContext = useContext(overviewContext)
-    //const { dateRange, formatDate } = dataContext
     const { dateRange, brands, getBrandsData, formatDate } = dataContext
-
 
     const [searchParams] = useSearchParams();
     const operator = searchParams.get("operator");
@@ -27,6 +25,9 @@ const ProductsComponent = () => {
     const [confirmation, setConfirmation] = useState({ show: false, campaignId: null, currentStatus: null, adGroupId: null, advertisedProductName: null, advertisedFsnId: null, campaignName: null });
     const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
 
+    // Add ref to handle abort controller for API calls
+    const abortControllerRef = useRef(null);
+
     const STATUS_OPTIONS = [
         { value: 1, label: 'Active' },
         { value: 0, label: 'Paused' }
@@ -36,7 +37,6 @@ const ProductsComponent = () => {
         {
             field: "asin",
             headerName: "ASIN",
-
             minWidth: 200
         },
         {
@@ -48,56 +48,16 @@ const ProductsComponent = () => {
             ),
             minWidth: 200
         },
-        /*{
-            field: "status",
-            headerName: "STATUS",
-            minWidth: 100,
-            renderCell: (params) => {
-                const productKey = getProductKey(params.row.advertised_fsn_id, params.row.ad_group_id);
-                if (updatingProduct[productKey]) {
-                    return (
-                        <Box sx={{ height: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
-                            <CircularProgress size={24} />
-                        </Box>
-                    );
-                }
-                return (
-                    <Switch
-                        disabled={params.row.status_label === "Archived" || params.row.status_label === ""}
-                        checked={params.row.status === 1}
-                        onChange={() => handleToggle(params.row.campaign_id, params.row.status, params.row.ad_group_id, params.row.advertised_product_name, params.row.advertised_fsn_id, params.row.campaign_name)}
-                    />
-                )
-            },
-            type: "singleSelect",
-            valueOptions: STATUS_OPTIONS
-        },*/
-        /*{
-            field: "advertised_fsn_id",
-            headerName: "FSN ID",
-            minWidth: 180
-        },
-        {
-            field: "ad_group_name",
-            headerName: "AD GROUP",
-            minWidth: 150,
-        },*/
         {
             field: "campaign_name",
             headerName: "CAMPAIGN",
             minWidth: 150,
         },
-
         {
             field: "ad_group_name",
             headerName: "AD GROUP",
             minWidth: 150,
         },
-        /*{
-            field: "ad_type",
-            headerName: "AD TYPE",
-            minWidth: 100,
-        },*/
         {
             field: "spend_x",
             headerName: "SPENDS",
@@ -199,7 +159,7 @@ const ProductsComponent = () => {
             headerName: "ACOS",
             minWidth: 150,
             renderCell: (params) => (
-                <columnPercentageDataComponent mainValue={params.row.acos_x} percentValue={params.row.acos_diff} />
+                <ColumnPercentageDataComponent mainValue={params.row.acos_x} percentValue={params.row.acos_diff} />
             ), type: "number", align: "left",
             headerAlign: "left",
         },
@@ -212,118 +172,6 @@ const ProductsComponent = () => {
             ), type: "number", align: "left",
             headerAlign: "left",
         },
-        /*{
-            field: "views",
-            headerName: "IMPRESSIONS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.views} percentValue={params.row.views_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "views_diff",
-            headerName: "IMPRESSIONS % CHANGE",
-            hideable: false
-        },
-        {
-            field: "clicks",
-            headerName: "CLICKS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.clicks} percentValue={params.row.clicks_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "clicks_diff",
-            headerName: "CLICKS % CHANGE",
-            hideable: false
-        },
-        {
-            field: "cpc",
-            headerName: "CPC",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.cpc} percentValue={params.row.cpc_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "cpc_diff",
-            headerName: "CPC % CHANGE",
-            hideable: false
-        },
-        {
-            field: "orders",
-            headerName: "ORDERS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.orders} percentValue={params.row.orders_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "orders_diff",
-            headerName: "ORDERS % CHANGE",
-            hideable: false
-        },
-        {
-            field: "indirect_sales",
-            headerName: "INDIRECT SALES",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.indirect_sales} percentValue={params.row.indirect_sales_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "indirect_sales_diff",
-            headerName: "INDIRECT SALES % CHANGE",
-            hideable: false
-        },
-        {
-            field: "acos",
-            headerName: "ACOS",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.acos} percentValue={params.row.acos_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "acos_diff",
-            headerName: "ACOS % CHANGE",
-            hideable: false
-        },
-        {
-            field: "cvr",
-            headerName: "CVR",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.cvr} percentValue={params.row.cvr_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "cvr_diff",
-            headerName: "CVR % CHANGE",
-            hideable: false
-        },
-        {
-            field: "aov",
-            headerName: "AOV",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.aov} percentValue={params.row.aov_diff} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },
-        {
-            field: "aov_diff",
-            headerName: "AOV % CHANGE",
-            hideable: false
-        },*/
     ];
 
     const STATUS_MAP = [
@@ -332,14 +180,12 @@ const ProductsComponent = () => {
         { value: "aborted", label: "Aborted" }
     ];
 
-
     const ProductsColumnFlipkart = [
-         {
+        {
             field: "fsn_id",
             headerName: "FSN ID",
             minWidth: 200,
         },
-        
         {
             field: "product_name",
             headerName: "PRODUCT",
@@ -349,84 +195,34 @@ const ProductsComponent = () => {
             ),
             minWidth: 300,
         },
-
-        /*{
-            field: "status",
-            headerName: "STATUS",
-            minWidth: 100,
-            renderCell: (params) => {
-                const productKey = getProductKey(params.row.Advertised_FSN_ID, params.row.Ad_Group_ID);
-
-                if (updatingProduct[productKey]) {
-                    return (
-                        <Box sx={{ height: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
-                            <CircularProgress size={24} />
-                        </Box>
-                    );
-                }
-
-                const status = params.row.status?.toLowerCase(); // Ensure case-insensitive check
-                const isActive = status === "active";
-                const isDisabled = status === "aborted" || status === "";
-
-                return (
-                    <Switch
-                        disabled={isDisabled}
-                        checked={isActive}
-                        onChange={() =>
-                            handleToggle(
-                                params.row.campaign_id,
-                                status,
-                                params.row.Ad_Group_ID,
-                                params.row.Advertised_Product_Name,
-                                params.row.Advertised_FSN_ID,
-                                params.row.campaign_name
-                            )
-                        }
-                    />
-                );
-            },
-            type: "singleSelect",
-            valueOptions: STATUS_MAP
-        },*/
-
-
         {
             field: "views",
             headerName: "IMPRESSIONS",
             minWidth: 150,
-             renderCell: (params) => (
+            renderCell: (params) => (
                 <ColumnPercentageDataComponent mainValue={params.row.views} percentValue={params.row.views_diff} />
             ), type: "number", align: "left",
             headerAlign: "left",
-            
-           
         },
-        
-        
-        
         {
             field: "ad_spend",
             headerName: "SPEND",
             minWidth: 150,
-             renderCell: (params) => (
+            renderCell: (params) => (
                 <ColumnPercentageDataComponent mainValue={params.row.ad_spend} percentValue={params.row.ad_spend_diff} />
             ), type: "number", align: "left",
             headerAlign: "left",
-           
         },
-         {
+        {
             field: "cvr",
             headerName: "CVR",
             minWidth: 150,
-             renderCell: (params) => (
+            renderCell: (params) => (
                 <ColumnPercentageDataComponent mainValue={params.row.cvr} percentValue={params.row.cvr_diff} />
             ), type: "number", align: "left",
             headerAlign: "left",
-           
         },
-       
-           {
+        {
             field: "direct_units_sold",
             headerName: "DIRECT ORDERS",
             minWidth: 150,
@@ -435,7 +231,7 @@ const ProductsComponent = () => {
             ), type: "number", align: "left",
             headerAlign: "left",
         },
-      {
+        {
             field: "indirect_units_sold",
             headerName: "INDIRECT ORDERS",
             minWidth: 150,
@@ -453,7 +249,6 @@ const ProductsComponent = () => {
             ), type: "number", align: "left",
             headerAlign: "left",
         },
-         
         {
             field: "indirect_revenue",
             headerName: "INDIRECT REVENUE",
@@ -472,9 +267,6 @@ const ProductsComponent = () => {
             ), type: "number", align: "left",
             headerAlign: "left",
         },
-
-
-         
     ];
 
     const ProductsColumnZepto = [
@@ -483,18 +275,6 @@ const ProductsComponent = () => {
             headerName: "PRODUCT",
             minWidth: 200
         },
-
-
-        /*{
-            field: "advertised_fsn_id",
-            headerName: "FSN ID",
-            minWidth: 180
-        },
-        {
-            field: "ad_group_name",
-            headerName: "AD GROUP",
-            minWidth: 150,
-        },*/
         {
             field: "campaign_name",
             headerName: "CAMPAIGN",
@@ -518,12 +298,6 @@ const ProductsComponent = () => {
             ), type: "number", align: "left",
             headerAlign: "left",
         },
-
-        /*{
-            field: "ad_type",
-            headerName: "AD TYPE",
-            minWidth: 100,
-        },*/
         {
             field: "spend",
             headerName: "SPENDS",
@@ -542,7 +316,6 @@ const ProductsComponent = () => {
             ), type: "number", align: "left",
             headerAlign: "left",
         },
-
         {
             field: "revenue",
             headerName: "SALES",
@@ -552,7 +325,6 @@ const ProductsComponent = () => {
             ), type: "number", align: "left",
             headerAlign: "left",
         },
-
         {
             field: "ctr",
             headerName: "CTR",
@@ -598,7 +370,6 @@ const ProductsComponent = () => {
             ), type: "number", align: "left",
             headerAlign: "left",
         },
-
         {
             field: "roas",
             headerName: "ROAS",
@@ -608,9 +379,6 @@ const ProductsComponent = () => {
             ), type: "number", align: "left",
             headerAlign: "left",
         },
-
-
-
     ];
 
     const ProductsColumnSwiggy = [
@@ -619,18 +387,6 @@ const ProductsComponent = () => {
             headerName: "PRODUCT",
             minWidth: 200
         },
-
-
-        /*{
-            field: "advertised_fsn_id",
-            headerName: "FSN ID",
-            minWidth: 180
-        },
-        {
-            field: "ad_group_name",
-            headerName: "AD GROUP",
-            minWidth: 150,
-        },*/
         {
             field: "campaign_name",
             headerName: "CAMPAIGN",
@@ -645,12 +401,6 @@ const ProductsComponent = () => {
             ), type: "number", align: "left",
             headerAlign: "left",
         },
-
-        /*{
-            field: "ad_type",
-            headerName: "AD TYPE",
-            minWidth: 100,
-        },*/
         {
             field: "spend",
             headerName: "SPENDS",
@@ -660,7 +410,6 @@ const ProductsComponent = () => {
             ), type: "number", align: "left",
             headerAlign: "left",
         },
-
         {
             field: "sales",
             headerName: "SALES",
@@ -670,7 +419,6 @@ const ProductsComponent = () => {
             ), type: "number", align: "left",
             headerAlign: "left",
         },
-
         {
             field: "ctr",
             headerName: "CTR",
@@ -689,9 +437,6 @@ const ProductsComponent = () => {
             ), type: "number", align: "left",
             headerAlign: "left",
         },
-
-
-
         {
             field: "clicks",
             headerName: "CLICKS",
@@ -728,9 +473,7 @@ const ProductsComponent = () => {
             ), type: "number", align: "left",
             headerAlign: "left",
         },
-
     ];
-
 
     const getProductKey = (advertisedFsnId, adGroupId) => `${advertisedFsnId}_${adGroupId}`;
 
@@ -865,32 +608,27 @@ const ProductsComponent = () => {
 
     const columns = useMemo(() => {
         if (operator === "Amazon") return ProductsColumnAmazon;
-
         if (operator === "Zepto") return ProductsColumnZepto;
         if (operator === "Flipkart") return ProductsColumnFlipkart;
         if (operator === "Swiggy") return ProductsColumnSwiggy;
         return [];
     }, [operator, brands]);
 
-    const abortControllerRef = useRef(null);
-    const isFirstBrandLoadRef = useRef(true);
-
     const handleRefresh = () => {
         getProductsData(true);
     };
 
+    // Single useEffect that mirrors OverviewComponent behavior
     useEffect(() => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+
         const timeout = setTimeout(() => {
-            // If brand already present on initial load, force refresh so spinner shows and cache is bypassed
-            if (selectedBrand) {
-                getProductsData(true);
-            } else {
+            if (localStorage.getItem("accessToken")) {
                 getProductsData();
             }
         }, 100);
-
-        // mark that initial load happened
-        isFirstBrandLoadRef.current = true;
 
         return () => {
             if (abortControllerRef.current) {
@@ -898,19 +636,7 @@ const ProductsComponent = () => {
             }
             clearTimeout(timeout);
         }
-    }, [operator, dateRange]);
-
-    // Trigger force refresh only when brand changes after initial mount
-    useEffect(() => {
-        if (isFirstBrandLoadRef.current) {
-            isFirstBrandLoadRef.current = false;
-            return;
-        }
-        if (selectedBrand) {
-            getProductsData(true);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedBrand]);
+    }, [operator, dateRange, selectedBrand]); // Include selectedBrand to trigger refresh on brand change
 
     const handleSnackbarOpen = (message, severity) => {
         setSnackbar({ open: true, message, severity });

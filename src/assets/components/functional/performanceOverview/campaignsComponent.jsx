@@ -35,6 +35,9 @@ const CampaignsComponent = (props, ref) => {
     const operator = searchParams.get("operator");
     const selectedBrand = searchParams.get("brand") || "Cinthol Grocery";
 
+    // Add ref to handle abort controller for API calls
+    const abortControllerRef = useRef(null);
+
     const STATUS_OPTIONS = [
         { value: 1, label: 'Active' },
         { value: 0, label: 'Paused' }
@@ -108,8 +111,8 @@ const CampaignsComponent = (props, ref) => {
                         checked={isActive}
                         onChange={() => handleToggle(
                             params.row.campaign_id,
-                            isActive ? 0 : 1,  // New status to be set
-                            params.row.ad_type  // Pass ad_type from row data
+                            isActive ? 0 : 1,
+                            params.row.ad_type
                         )}
                     />
                 );
@@ -226,7 +229,6 @@ const CampaignsComponent = (props, ref) => {
         }
     ];
 
-    // Normalize brands from context to a flat list of strings
     const normalizedBrands = useMemo(() => {
         const source = brands;
         if (!source) return [];
@@ -329,12 +331,16 @@ const CampaignsComponent = (props, ref) => {
         refresh: handleRefresh
     }));
 
-    const abortControllerRef = useRef(null);
+    // Single useEffect that mirrors OverviewComponent behavior
+    useEffect(() => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
 
-   useEffect(() => {
         const timeout = setTimeout(() => {
-            // Force refresh when brand changes to bypass cache
-            getCampaignsData(true);
+            if (localStorage.getItem("accessToken")) {
+                getCampaignsData();
+            }
         }, 100);
 
         return () => {
@@ -343,19 +349,14 @@ const CampaignsComponent = (props, ref) => {
             }
             clearTimeout(timeout);
         }
-    }, [operator, dateRange, selectedBrand]);
+    }, [operator, dateRange, selectedBrand]); // Include selectedBrand to trigger refresh on brand change
 
     useEffect(() => {
-        // Ensure brands list is available for dropdown
         try { getBrandsData(); } catch (_) {}
     }, [operator]);
 
     const columns = useMemo(() => {
-        if (operator === "Amazon") return CampaignsColumnAmazon;
-        if (operator === "Zepto") return CampaignsColumnZepto;
         if (operator === "Flipkart") return CampaignsColumnFlipkart;
-        if (operator === "Swiggy") return CampaignsColumnSwiggy;
-       
         return [];
     }, [operator, brands, updatingCampaigns]);
 
@@ -395,12 +396,11 @@ const CampaignsComponent = (props, ref) => {
     };
 
     const handleToggle = (campaignId, newStatus, adType) => {
-        // Show confirmation dialog with the new status that will be set
         setConfirmation({ 
             show: true, 
             campaignId, 
-            campaignType: newStatus, // This will be the new status (0 or 1)
-            adType // Add adType to confirmation state
+            campaignType: newStatus,
+            adType
         });
     };
 
@@ -417,10 +417,9 @@ const CampaignsComponent = (props, ref) => {
             const requestBody = {
                 campaign_id: campaignId,
                 ad_type: adType,
-                brand: selectedBrand // Added brand to match your API requirements
+                brand: selectedBrand
             };
 
-            // Updated URL to match your API endpoint
             const playPauseUrl = `https://react-api-script.onrender.com/gcpl/campaign-play-pause?platform=${operator}`;
 
             const response = await fetch(playPauseUrl, {
@@ -439,27 +438,22 @@ const CampaignsComponent = (props, ref) => {
             const data = await response.json();
             console.log("Campaign status updated successfully", data);
 
-            // Update the local state based on the response status
             setCampaignsData(prevData => ({
                 ...prevData,
                 data: prevData.data.map(campaign =>
                     campaign.campaign_id === campaignId
-                        ? { ...campaign, status: data.status } // Use status from API response
+                        ? { ...campaign, status: data.status }
                         : campaign
                 )
             }));
 
             setUpdatingCampaigns(prev => ({ ...prev, [campaignId]: false }));
-            
-            // Use the message from API response
             handleSnackbarOpen(data.message || "Campaign status updated successfully!", "success");
             
         } catch (error) {
             console.error("Error updating campaign status:", error);
             handleSnackbarOpen("Error updating campaign status", "error");
             setUpdatingCampaigns(prev => ({ ...prev, [campaignId]: false }));
-            
-            // Optionally refresh data on error to sync with server state
             getCampaignsData();
         }
     };
@@ -472,10 +466,8 @@ const CampaignsComponent = (props, ref) => {
         setSnackbar({ ...snackbar, open: false });
     };
 
-
     return (
         <React.Fragment>
-            {/* Brand Filter controlled via Header dropdown (URL param 'brand') */}
             <Dialog open={confirmation.show} onClose={() => setConfirmation({ show: false, campaignId: null, campaignType: null, adType: null })}>
                 <DialogTitle>Confirm Status Change</DialogTitle>
                 <DialogContent>

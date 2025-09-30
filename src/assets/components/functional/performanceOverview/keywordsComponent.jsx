@@ -22,12 +22,14 @@ const KeywordsComponent = () => {
     const [isLoading, setIsLoading] = useState(false)
     const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
     const [confirmation, setConfirmation] = useState({ show: false, campaignType: null, keywordId: null, targetId: null, adGroupId: null, campaignId: null });
-   // Using brand from URL like ProductsComponent
 
     const [searchParams, setSearchParams] = useSearchParams();
     const operator = searchParams.get("operator");
-       const selectedBrand = searchParams.get("brand") || "Cinthol Grocery";
+    const selectedBrand = searchParams.get("brand") || "Cinthol Grocery";
     const navigate = useNavigate()
+
+    // Add ref to handle abort controller for API calls
+    const abortControllerRef = useRef(null);
 
     // Brand account combinations
     const accountCombinations = [
@@ -132,25 +134,21 @@ const KeywordsComponent = () => {
         }
     };
 
-    const abortControllerRef = useRef(null);
-    const isFirstBrandLoadRef = useRef(true); // guard to avoid firing brand effect on initial mount
-
     const handleRefresh = () => {
         getKeywordsData(true);
     };
 
+    // Single useEffect that mirrors OverviewComponent behavior
     useEffect(() => {
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+
         const timeout = setTimeout(() => {
-            // If brand is already selected on first load, force refresh to ensure network fetch and buffering
-            if (selectedBrand) {
-                getKeywordsData(true);
-            } else {
+            if (localStorage.getItem("accessToken")) {
                 getKeywordsData();
             }
         }, 100);
-
-        // mark that initial load happened so brand-change effect can skip first invocation
-        isFirstBrandLoadRef.current = true;
 
         return () => {
             if (abortControllerRef.current) {
@@ -158,21 +156,7 @@ const KeywordsComponent = () => {
             }
             clearTimeout(timeout);
         }
-    }, [operator, dateRange, campaignName]);
-
-    // Trigger a force refresh only when brand actually changes after initial mount
-    useEffect(() => {
-        // skip the first run (initial mount) — isFirstBrandLoadRef is true during mount
-        if (isFirstBrandLoadRef.current) {
-            isFirstBrandLoadRef.current = false;
-            return;
-        }
-        if (selectedBrand) {
-            getKeywordsData(true);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedBrand]);
-
+    }, [operator, dateRange, selectedBrand]); // Include selectedBrand to force refresh on brand change
 
     useEffect(() => {
         getBrandsData()
@@ -184,8 +168,6 @@ const KeywordsComponent = () => {
             window.location.reload();
         }
     }, []);
-
-    // Brand selection is centralized in Header via URL params
 
     const handleToggle = (campaignType, keywordId, targetId, adGroupId, campaignId) => {
         setConfirmation({ show: true, campaignType, keywordId, targetId, adGroupId, campaignId });
@@ -202,9 +184,8 @@ const KeywordsComponent = () => {
                 </div>
             ),
         },
-         { field: "match_type", headerName: "MATCH TYPE", minWidth: 150, headerAlign: "left", },
-        
-               {
+        { field: "match_type", headerName: "MATCH TYPE", minWidth: 150, headerAlign: "left", },
+        {
             field: "impressions",
             headerName: "IMPRESSIONS",
             minWidth: 150,
@@ -213,7 +194,7 @@ const KeywordsComponent = () => {
             ), type: "number", align: "left",
             headerAlign: "left",
         },
-                {
+        {
             field: "clicks",
             headerName: "CLICKS",
             minWidth: 150,
@@ -222,7 +203,7 @@ const KeywordsComponent = () => {
             ), type: "number", align: "left",
             headerAlign: "left",
         },
-       {
+        {
             field: "spend",
             headerName: "SPENDS",
             minWidth: 170,
@@ -231,7 +212,7 @@ const KeywordsComponent = () => {
             ), type: "number", align: "left",
             headerAlign: "left",
         },
-         {
+        {
             field: "orders",
             headerName: "ORDERS",
             minWidth: 170,
@@ -240,7 +221,6 @@ const KeywordsComponent = () => {
             ), type: "number", align: "left",
             headerAlign: "left",
         },
-
         {
             field: "revenue",
             headerName: "SALES",
@@ -250,9 +230,6 @@ const KeywordsComponent = () => {
             ), type: "number", align: "left",
             headerAlign: "left",
         },
-        
-       
-       
         {
             field: "cpc",
             headerName: "CPC",
@@ -280,20 +257,7 @@ const KeywordsComponent = () => {
             ), type: "number", align: "left",
             headerAlign: "left",
         },
-        
-         
-        /*{
-            field: "direct_sales",
-            headerName: "DIRECT SALES",
-            minWidth: 150,
-            renderCell: (params) => (
-                <ColumnPercentageDataComponent mainValue={params.row.direct_sales} percentValue={params.row.direct_sales_change} />
-            ), type: "number", align: "left",
-            headerAlign: "left",
-        },*/
-
-       
-         {
+        {
             field: "roas",
             headerName: "ROAS",
             minWidth: 150,
@@ -311,7 +275,6 @@ const KeywordsComponent = () => {
             ), type: "number", align: "left",
             headerAlign: "left",
         },
-
         {
             field: "campaign_name",
             headerName: "CAMPAIGN",
@@ -320,10 +283,7 @@ const KeywordsComponent = () => {
     ];
 
     const columns = useMemo(() => {
-        if (operator === "Amazon") return KeywordsColumnAmazon;
-        if (operator === "Zepto") return KeywordsColumnZepto;
         if (operator === "Flipkart") return KeywordsColumnFlipkart;
-        if (operator === "Swiggy") return KeywordsColumnSwiggy;
         return [];
     }, [operator, brands, updatingKeywords]);
 
@@ -333,7 +293,6 @@ const KeywordsComponent = () => {
             const startDate = formatDate(dateRange[0].startDate);
             const endDate = formatDate(dateRange[0].endDate);
             
-            // Build URL with brand parameter if selected
             let url = `https://react-api-script.onrender.com/gcpl/keyword_graph?start_date=${formatDate(startDate)}&end_date=${formatDate(endDate)}&platform=${operator}&campaign_id=${campaignId}&keyword=${keywordName}`;
             if (selectedBrand) {
                 url += `&brand_name=${encodeURIComponent(selectedBrand)}`;
@@ -392,7 +351,6 @@ const KeywordsComponent = () => {
                 campaign_id: campaignId
             });
             
-            // Add brand parameter if selected
             if (selectedBrand) {
                 params.append('brand_name', selectedBrand);
             }
@@ -437,7 +395,6 @@ const KeywordsComponent = () => {
             <TrendsModal
                 showTrendsModal={showTrendsModal}
                 setShowTrendsModal={setShowTrendsModal} />
-            {/* Brand Filter controlled via Header dropdown (URL param 'brand') */}
             <div className="shadow-box-con-keywords aggregated-view-con">
                 <div className="datatable-con-keywords">
                     <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 1 }}>
@@ -446,7 +403,6 @@ const KeywordsComponent = () => {
                         </Button>
                     </Box>
 
-                    {/* Show spinner while fetching, otherwise show table */}
                     {isLoading ? (
                         <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 200 }}>
                             <CircularProgress />
