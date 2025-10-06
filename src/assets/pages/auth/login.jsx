@@ -30,7 +30,7 @@ const Login = () => {
         setIsLoggingIn(true);
 
         try {
-            const res = await axios.post(`${url}/bowlers/login`, {
+            const res = await axios.post(`${url}/gcpl/login`, {
                 username: userName,
                 password: password,
             });
