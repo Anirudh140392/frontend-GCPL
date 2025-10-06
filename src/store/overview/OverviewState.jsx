@@ -4,9 +4,9 @@ import { subDays, format } from "date-fns";
 import { useSearchParams } from "react-router";
 import { cachedFetch } from "../../services/cachedFetch";
 import { getCache } from "../../services/cacheUtils";
+import { API_BASE_URL, buildGcplUrl, buildAppUrl } from "../../config/api.js";
 
 const OverviewState = (props) => {
-    const host = "https://react-api-script.onrender.com"
 
     const [searchParams] = useSearchParams();
     const operator = searchParams.get("operator");
@@ -46,7 +46,7 @@ const OverviewState = (props) => {
         const endDate = formatDate(dateRange[0].endDate);
 
         try {
-            let url = `${host}/gcpl/${endpoint}?start_date=${startDate}&end_date=${endDate}&platform=${operator}`;
+            let url = buildGcplUrl(`${endpoint}?start_date=${startDate}&end_date=${endDate}&platform=${operator}`);
             if (selectedBrand && typeof selectedBrand === "string") {
                 url += `&brand_name=${encodeURIComponent(selectedBrand)}`;
             }
@@ -89,7 +89,7 @@ const OverviewState = (props) => {
         }
 
         try {
-            const url = `${host}/app/brand-name?platform=${operator}`;
+            const url = buildAppUrl(`brand-name?platform=${operator}`);
             const cacheKey = `cache:GET:${url}`;
 
             const cached = getCache(cacheKey);
@@ -135,7 +135,7 @@ const OverviewState = (props) => {
         const endDate = formatDate(dateRange[0].endDate);
         const ts = forceRefresh ? `&_=${Date.now()}` : "";
 
-        let url = `${host}/gcpl/home?start_date=${startDate}&end_date=${endDate}&platform=${operator}${ts}`;
+        let url = buildGcplUrl(`home?start_date=${startDate}&end_date=${endDate}&platform=${operator}${ts}`);
         if (selectedBrand && typeof selectedBrand === "string") {
             url += `&brand_name=${encodeURIComponent(selectedBrand)}`;
         }
@@ -176,7 +176,7 @@ const OverviewState = (props) => {
         } finally {
             setOverviewLoading(false);
         }
-    }, [dateRange, operator, selectedBrand, formatDate, host]);
+    }, [dateRange, operator, selectedBrand, formatDate]);
 
     useEffect(() => {
         setCampaignName("")

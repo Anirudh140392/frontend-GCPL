@@ -5,6 +5,7 @@ import AuthFieldComponent from "../../components/functional/auth/authFieldCompon
 import '../../styles/auth/auth.less';
 import { useNavigate } from "react-router-dom";
 import axios from 'axios';
+import { buildAppUrl } from "../../../config/api.js";
 const defaultValue = {
     firstName: '',
     lastName: '',
@@ -14,7 +15,6 @@ const defaultValue = {
 
 const Signup = () => {
     const navigate=useNavigate()
-    const url="https://react-api-script.onrender.com"
     const [authDetail, setAuthDetail] = useState(defaultValue);
     const [notificationMessageType, setNotificationMessageType] = useState('');
     const [notificationMessage, setNotificationMessage] = useState('');
@@ -73,7 +73,7 @@ const Signup = () => {
 
     const userSignup = async (firstName, lastName, userName, password, setNotification) => {
         try {
-            await axios.post(`${url}/app/register`, {
+            await axios.post(buildAppUrl('register'), {
                 first_name: firstName,
                 last_name: lastName,
                 username: userName,

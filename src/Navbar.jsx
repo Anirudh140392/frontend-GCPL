@@ -18,6 +18,7 @@ import authContext from "./store/auth/authContext";
 import axios from "axios";
 import { cachedAxiosGet } from "./services/cachedAxios";
 import { getCache } from "./services/cacheUtils";
+import { buildGcplUrl } from "./config/api.js";
 
 const RedirectLink = ({ url, label, pathName, onClick }) => {
     return (
@@ -172,7 +173,7 @@ const Navbar = () => {
                 abortControllerRef.current = controller;
 
                 // Build URL with brand parameter if selected
-                let url = `https://react-api-script.onrender.com/gcpl/wallet_balance?platform=${operatorName}`;
+                let url = buildGcplUrl(`wallet_balance?platform=${operatorName}`);
                 if (selectedBrand) {
                     url += `&brand_name=${encodeURIComponent(selectedBrand)}`;
                 }

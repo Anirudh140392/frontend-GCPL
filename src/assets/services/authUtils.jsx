@@ -1,12 +1,12 @@
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-let BASE_URL = 'https://react-api-script.onrender.com';
+import { API_BASE_URL, buildAppUrl } from '../../config/api.js';
 
 
 export const userLogin = async ({userName, password, setNotification}) => {
-    const token = await axios.get(`${BASE_URL}/csrfToken/`).then(res => res.data);
+    const token = await axios.get(`${API_BASE_URL}/csrfToken/`).then(res => res.data);
     await axios
-        .post(`${BASE_URL}/login/`, {
+        .post(`${API_BASE_URL}/login/`, {
             ...token,
             username: userName,
             password: password,
@@ -20,7 +20,7 @@ export const userLogin = async ({userName, password, setNotification}) => {
 
 export const userSignup = async ({ firstName, lastName, userName, password, setNotification, navigate }) => {
     try {
-        await axios.post(`https://react-api-script.onrender.com/app/register/`, {
+        await axios.post(buildAppUrl('register/'), {
             first_name: firstName,
             last_name: lastName,
             username: userName,

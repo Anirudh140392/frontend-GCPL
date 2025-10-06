@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import MuiDataTableComponent from "../../common/muidatatableComponent";
 import { useSearchParams } from "react-router-dom";
+import { buildGcplUrl } from "../../../../config/api.js";
 
 const HistoryDatatable = () => {
 
@@ -101,7 +102,7 @@ const HistoryDatatable = () => {
         }
 
         try {
-            const response = await fetch(`https://react-api-script.onrender.com/gcpl/history?platform=${operator}`, {
+            const response = await fetch(buildGcplUrl(`history?platform=${operator}`), {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",

@@ -13,6 +13,7 @@ import { cachedFetch } from "../../../../services/cachedFetch";
 import { getCache, setCache } from "../../../../services/cacheUtils";
 import OnePercentageDataComponent from "../../common/onePercentageComponent";
 import ValueFormatter from "../../common/valueFormatter";
+import { buildGcplUrl } from "../../../../config/api.js";
 
 const CampaignsComponent = (props, ref) => {
 
@@ -314,7 +315,7 @@ const CampaignsComponent = (props, ref) => {
 
         try {
             const ts = forceRefresh ? `&_=${Date.now()}` : "";
-            let url = `https://react-api-script.onrender.com/gcpl/campaign?start_date=${startDate}&end_date=${endDate}&platform=${operator}${ts}`;
+            let url = buildGcplUrl(`campaign?start_date=${startDate}&end_date=${endDate}&platform=${operator}${ts}`);
             if (selectedBrand && typeof selectedBrand === "string") {
                 url += `&brand_name=${encodeURIComponent(selectedBrand)}`;
             }
