@@ -286,30 +286,43 @@ const normalizeFilters = (filters) => {
 
             {/* Conditional rendering based on Type */}
             {ruleData?.rule_type === "Bid" && (
-                <Box display="flex" alignItems="center" gap={2} mt={2}>
-                    <FormControl sx={{ width: "45%" }}>
-                        <InputLabel>Actions</InputLabel>
-                        <Select
-                            label="Actions"
-                            value={ruleData?.operation_name || ""}
+                <>
+                    <Box display="flex" alignItems="center" gap={2} mt={2}>
+                        <FormControl sx={{ width: "45%" }}>
+                            <InputLabel>Actions</InputLabel>
+                            <Select
+                                label="Actions"
+                                value={ruleData?.operation_name || ""}
+                                onChange={(e) =>
+                                    setRuleData({ ...ruleData, operation_name: e.target.value })
+                                }
+                            >
+                                <MenuItem value="In">Increase Bid %</MenuItem>
+                                <MenuItem value="De">Decrease Bid %</MenuItem>
+                            </Select>
+                        </FormControl>
+                        <Typography>by</Typography>
+                        <TextField
+                            type="number"
+                            value={ruleData.operation_type || ""}
+                            sx={{ width: "45%" }}
                             onChange={(e) =>
-                                setRuleData({ ...ruleData, operation_name: e.target.value })
+                                setRuleData({ ...ruleData, operation_type: e.target.value })
                             }
-                        >
-                            <MenuItem value="In">Increase Bid %</MenuItem>
-                            <MenuItem value="De">Decrease Bid %</MenuItem>
-                        </Select>
-                    </FormControl>
-                    <Typography>by</Typography>
+                        />
+                    </Box>
+                    
                     <TextField
+                        fullWidth
+                        label={ruleData.limit_value === "max" ? "Maximum (INR)" : "Minimum (INR)"}
                         type="number"
-                        value={ruleData.operation_type || ""}
-                        sx={{ width: "45%" }}
+                        value={ruleData.limit_value || ""}
+                        margin="normal"
                         onChange={(e) =>
-                            setRuleData({ ...ruleData, operation_type: e.target.value })
+                            setRuleData({ ...ruleData, limit_value: e.target.value })
                         }
                     />
-                </Box>
+                </>
             )}
 
             {ruleData?.rule_type === "Date Extension" && (
@@ -327,17 +340,6 @@ const normalizeFilters = (filters) => {
                     }
                 />
             )}
-
-            <TextField
-                fullWidth
-                label={ruleData.limit_value === "max" ? "Maximum (INR)" : "Minimum (INR)"}
-                type="number"
-                value={ruleData.limit_value || ""}
-                margin="normal"
-                onChange={(e) =>
-                    setRuleData({ ...ruleData, limit_value: e.target.value })
-                }
-            />
 
             <Box mt={2}>
                 {/*<Typography variant="subtitle2" mb={1}>
