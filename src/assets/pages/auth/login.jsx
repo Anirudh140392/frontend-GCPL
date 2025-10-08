@@ -5,6 +5,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import authContext from "../../../store/auth/authContext";
 import { CircularProgress, Snackbar, Alert } from "@mui/material";
+import { buildBowlersUrl } from "../../../config/api.js";
 
 const defaultValue = {
     userName: "",
@@ -15,7 +16,6 @@ const Login = () => {
     const authCtx = useContext(authContext);
     const { setUser } = authCtx;
     const [authDetail, setAuthDetail] = useState(defaultValue);
-    const url = "https://react-api-script.onrender.com";
     const navigate = useNavigate();
     const [showError, setShowError] = useState({
         userNameError: false,
@@ -30,7 +30,7 @@ const Login = () => {
         setIsLoggingIn(true);
 
         try {
-            const res = await axios.post(`${url}/gcpl/login`, {
+            const res = await axios.post(buildBowlersUrl('login'), {
                 username: userName,
                 password: password,
             });
