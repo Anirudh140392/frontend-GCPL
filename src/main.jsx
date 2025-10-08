@@ -1,19 +1,17 @@
-import React, { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import "./index.css";
-import App from "./App.jsx";
-import { BrowserRouter } from "react-router-dom";
-import OverviewState from "./store/overview/OverviewState";
-import AuthState from "./store/auth/AuthState";
+/**
+ * Main Entry Point - Frontend Unified Monorepo
+ * Initializes the React application
+ */
 
-createRoot(document.getElementById("root")).render(
-  <StrictMode>
-    <BrowserRouter>
-      <AuthState>
-        <OverviewState>
-          <App />
-        </OverviewState>
-      </AuthState>
-    </BrowserRouter>
-  </StrictMode>
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App.jsx';
+import './index.css';
+
+// Initialize the application
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
 );
+

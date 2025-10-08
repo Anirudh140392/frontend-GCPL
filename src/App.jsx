@@ -1,52 +1,58 @@
-import React, { useContext } from "react";
-import "./App.css";
-import { Routes, Route, useLocation, Navigate } from "react-router";
-import PerformanceOverviewComponent from "./assets/pages/performanceOverview";
-import Login from "./assets/pages/auth/login";
-import History from "./assets/pages/history";
-import Navbar from "./Navbar";
-import Header from "./Header";
-import authContext from "./store/auth/authContext";
-import NegativeKeywordsComponent from "./assets/pages/negativeKeywords";
-import SmartControl from "./assets/pages/smartControl";
-import ProductAnalyticsComponent from "./assets/pages/productAnalytics";
-import SearchTermInsights from "./assets/pages/searchTermInsights";
+/**
+ * Main App Component - Frontend Unified Monorepo
+ * Entry point for the multi-client application
+ */
 
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { CssBaseline, Box } from '@mui/material';
+import { ClientProvider } from './contexts/ClientContext';
+import Layout from './components/Layout';
+import Dashboard from './pages/Dashboard';
+import Campaigns from './pages/Campaigns';
+import Keywords from './pages/Keywords';
+import Products from './pages/Products';
+import Analytics from './pages/Analytics';
 
+// Create a default theme (will be overridden by client-specific themes)
+const defaultTheme = createTheme({
+  palette: {
+    primary: {
+      main: '#1976d2',
+    },
+    secondary: {
+      main: '#dc004e',
+    },
+  },
+  typography: {
+    fontFamily: 'Roboto, Arial, sans-serif',
+  },
+});
 
 function App() {
-  const location = useLocation();
-  const { isLoggedIn } = useContext(authContext)
   return (
-    <>
-      {!location.pathname.includes("/login") &&
-        !location.pathname.includes("/signup") && (
-          <>
-            <Navbar />
-            <Header />
-          </>
-        )}
-      <div
-        className={`${location.pathname.includes("/login") ||
-          location.pathname.includes("/signup")
-          ? "auth-main-con"
-          : "main-con"
-          }`}
-      >
-        <Routes>
-          <Route path="/" element={isLoggedIn ? <PerformanceOverviewComponent /> : <Navigate to="/login" />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/keyword-analysis" element={isLoggedIn ? <SearchTermInsights /> : <Navigate to="/login" />} />
-           <Route path="/product-analytics" element={isLoggedIn ? <ProductAnalyticsComponent /> : <Navigate to="/login" />} />
-
-          <Route path="/rules" element={isLoggedIn ? <SmartControl /> : <Navigate to="/login" />} />
-          <Route path="/negative-keywords" element={isLoggedIn ? <NegativeKeywordsComponent /> : <Navigate to="/login" />} />
-          <Route path="/history" element={isLoggedIn ? <History /> : <Navigate to="/login" />} />
-          
-        </Routes>
-      </div>
-    </>
+    <ClientProvider>
+      <ThemeProvider theme={defaultTheme}>
+        <CssBaseline />
+        <Router>
+          <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/campaigns" element={<Campaigns />} />
+                <Route path="/keywords" element={<Keywords />} />
+                <Route path="/products" element={<Products />} />
+                <Route path="/analytics" element={<Analytics />} />
+              </Routes>
+            </Layout>
+          </Box>
+        </Router>
+      </ThemeProvider>
+    </ClientProvider>
   );
 }
 
 export default App;
+
