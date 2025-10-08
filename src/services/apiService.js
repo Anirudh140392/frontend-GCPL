@@ -1,5 +1,6 @@
 /**
- * Centralized API Service for Client-Specific Endpoints
+ * Centralized API Service for Multi-Client Frontend Monorepo
+ * Supports GCPL, Samsonite, Bowlers, and Bunge clients
  * Dynamically constructs API URLs based on selected client
  */
 
@@ -7,7 +8,7 @@ const BASE_URL = 'https://react-api-script.onrender.com';
 
 /**
  * Get the currently selected client from localStorage
- * @returns {string} The selected client (gcpl, samsonite, bowlers)
+ * @returns {string} The selected client (gcpl, samsonite, bowlers, bunge)
  */
 export const getCurrentClient = () => {
   const client = localStorage.getItem('selectedClient');
@@ -126,26 +127,80 @@ export const getApiUrlWithParams = (endpoint, params = {}, client = null) => {
 
 /**
  * Client-specific configuration
- * Define any client-specific settings or overrides
+ * Define client-specific settings, branding, and business logic
  */
 export const CLIENT_CONFIG = {
   gcpl: {
     name: 'GCPL',
     displayName: 'GCPL Analytics',
     defaultBrand: 'Cinthol Grocery',
-    supportedPlatforms: ['Flipkart', 'Amazon']
+    supportedPlatforms: ['Flipkart', 'Amazon'],
+    primaryColor: '#1976d2',
+    secondaryColor: '#dc004e',
+    logo: '/assets/logos/gcpl-logo.png',
+    favicon: '/assets/favicons/gcpl-favicon.ico',
+    features: {
+      campaigns: true,
+      keywords: true,
+      products: true,
+      smartControl: true,
+      negativeKeywords: true,
+      analytics: true
+    }
   },
   samsonite: {
     name: 'Samsonite',
     displayName: 'Samsonite Analytics',
     defaultBrand: 'Samsonite',
-    supportedPlatforms: ['Amazon']
+    supportedPlatforms: ['Amazon', 'Flipkart'],
+    primaryColor: '#d32f2f',
+    secondaryColor: '#1976d2',
+    logo: '/assets/logos/samsonite-logo.png',
+    favicon: '/assets/favicons/samsonite-favicon.ico',
+    features: {
+      campaigns: true,
+      keywords: true,
+      products: true,
+      smartControl: true,
+      negativeKeywords: true,
+      analytics: true
+    }
   },
   bowlers: {
     name: 'Bowlers',
-    displayName: 'Bowlers Analytics', 
+    displayName: 'Bowlers Analytics',
     defaultBrand: 'Bowlers',
-    supportedPlatforms: ['Amazon']
+    supportedPlatforms: ['Amazon', 'Flipkart'],
+    primaryColor: '#388e3c',
+    secondaryColor: '#f57c00',
+    logo: '/assets/logos/bowlers-logo.png',
+    favicon: '/assets/favicons/bowlers-favicon.ico',
+    features: {
+      campaigns: true,
+      keywords: true,
+      products: true,
+      smartControl: true,
+      negativeKeywords: false, // Bowlers might not use negative keywords
+      analytics: true
+    }
+  },
+  bunge: {
+    name: 'Bunge',
+    displayName: 'Bunge Analytics',
+    defaultBrand: 'Bunge',
+    supportedPlatforms: ['Amazon', 'Flipkart'],
+    primaryColor: '#f57c00',
+    secondaryColor: '#388e3c',
+    logo: '/assets/logos/bunge-logo.png',
+    favicon: '/assets/favicons/bunge-favicon.ico',
+    features: {
+      campaigns: true,
+      keywords: true,
+      products: true,
+      smartControl: true,
+      negativeKeywords: true,
+      analytics: true
+    }
   }
 };
 
@@ -157,6 +212,29 @@ export const CLIENT_CONFIG = {
 export const getClientConfig = (client = null) => {
   const selectedClient = client || getCurrentClient();
   return CLIENT_CONFIG[selectedClient] || CLIENT_CONFIG.gcpl;
+};
+
+/**
+ * Get all available clients
+ * @returns {Array} Array of client objects with name and displayName
+ */
+export const getAllClients = () => {
+  return Object.keys(CLIENT_CONFIG).map(key => ({
+    value: CLIENT_CONFIG[key].name,
+    label: CLIENT_CONFIG[key].displayName,
+    key: key
+  }));
+};
+
+/**
+ * Check if a feature is enabled for the current client
+ * @param {string} feature - Feature name to check
+ * @param {string} client - Optional client override
+ * @returns {boolean} Whether the feature is enabled
+ */
+export const isFeatureEnabled = (feature, client = null) => {
+  const config = getClientConfig(client);
+  return config.features[feature] || false;
 };
 
 /**
@@ -187,9 +265,53 @@ export const apiCall = async (endpoint, options = {}, params = {}, client = null
     headers: defaultHeaders
   };
   
-  console.log(`API Call [${getCurrentClient().toUpperCase()}]:`, url);
+  const currentClient = getCurrentClient().toUpperCase();
+  console.log(`🌐 API Call [${currentClient}]:`, url);
   
-  return fetch(url, fetchOptions);
+  try {
+    const response = await fetch(url, fetchOptions);
+    
+    if (!response.ok) {
+      console.error(`❌ API Error [${currentClient}]:`, response.status, response.statusText);
+      throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+    }
+    
+    console.log(`✅ API Success [${currentClient}]:`, response.status);
+    return response;
+  } catch (error) {
+    console.error(`💥 API Exception [${currentClient}]:`, error.message);
+    throw error;
+  }
+};
+
+/**
+ * Utility function to switch client and update document title/favicon
+ * @param {string} newClient - The new client to switch to
+ */
+export const switchClientWithBranding = (newClient) => {
+  const clientLower = newClient.toLowerCase();
+  const config = getClientConfig(clientLower);
+  
+  // Update localStorage
+  localStorage.setItem('selectedClient', newClient);
+  
+  // Update document title
+  document.title = `${config.displayName} - Dashboard`;
+  
+  // Update favicon
+  const favicon = document.querySelector('link[rel="icon"]') || document.createElement('link');
+  favicon.rel = 'icon';
+  favicon.href = config.favicon;
+  if (!document.querySelector('link[rel="icon"]')) {
+    document.head.appendChild(favicon);
+  }
+  
+  // Dispatch custom event
+  window.dispatchEvent(new CustomEvent('clientChanged', { 
+    detail: { client: newClient, config } 
+  }));
+  
+  console.log(`🔄 Switched to client: ${newClient} (${config.displayName})`);
 };
 
 export default {
@@ -198,7 +320,10 @@ export default {
   getApiUrl,
   getApiUrlWithParams,
   getClientConfig,
+  getAllClients,
+  isFeatureEnabled,
   apiCall,
+  switchClientWithBranding,
   API_ENDPOINTS,
   CLIENT_CONFIG
 };
