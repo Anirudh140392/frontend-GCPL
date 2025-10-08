@@ -107,11 +107,15 @@ const Header = () => {
     // Store client selection in localStorage for persistence
     localStorage.setItem('selectedClient', clientValue);
     
-    // You can add additional logic here to handle client-specific configurations
     console.log(`Switched to client: ${clientValue}`);
     
-    // Optionally, you could reload the page or trigger a context update
-    // window.location.reload(); // Uncomment if you want to reload on client change
+    // Trigger a custom event to notify other components about client change
+    window.dispatchEvent(new CustomEvent('clientChanged', { 
+      detail: { client: clientValue } 
+    }));
+    
+    // Reload the page to refresh all data with new client
+    window.location.reload();
   };
 
   // Initialize from URL params and localStorage
