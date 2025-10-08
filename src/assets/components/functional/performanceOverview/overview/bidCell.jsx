@@ -31,6 +31,7 @@ const BidCell = ({ value, campaignId, onUpdate, targetId, campaignType, adGroupI
                     "Content-Type": "application/json",
                 },
             });
+            
 
             if (!response.ok) throw new Error("Failed to update bid");
 
