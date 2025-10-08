@@ -11,6 +11,7 @@ import { Dialog, DialogActions, DialogContent, DialogTitle } from "@mui/material
 import { cachedFetch } from "../../../../services/cachedFetch";
 import { getCache } from "../../../../services/cacheUtils";
 import NewPercentageDataComponent from "../../common/newPercentageDataComponent";
+import { getApiUrlWithParams, API_ENDPOINTS } from "../../../../services/apiService";
 
 const KeywordsComponent = () => {
 
@@ -84,12 +85,23 @@ const KeywordsComponent = () => {
 
         const startDate = formatDate(dateRange[0].startDate);
         const endDate = formatDate(dateRange[0].endDate);
-        const ts = forceRefresh ? `&_=${Date.now()}` : "";
 
-        let url = `https://react-api-script.onrender.com/gcpl/keyword?start_date=${startDate}&end_date=${endDate}&platform=${operator}${ts}`;
+        // Build URL using API service for client-specific endpoints
+        const params = {
+            start_date: startDate,
+            end_date: endDate,
+            platform: operator
+        };
+        
         if (selectedBrand && typeof selectedBrand === "string") {
-            url += `&brand_name=${encodeURIComponent(selectedBrand)}`;
+            params.brand_name = selectedBrand;
         }
+        
+        if (forceRefresh) {
+            params._ = Date.now();
+        }
+        
+        const url = getApiUrlWithParams(API_ENDPOINTS.KEYWORDS, params);
         const cacheKey = `cache:GET:${url}`;
 
         if (forceRefresh) {
