@@ -69,6 +69,7 @@ const Header = () => {
     operatorType || ""
   );
   const [selectedBrand, setSelectedBrand] = useState(brandType || "Cinthol Grocery");
+  const [selectedClient, setSelectedClient] = useState("GCPL"); // Default to GCPL
 
   const [showHeaderLogo, setShowHeaderLogo] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -98,10 +99,26 @@ const Header = () => {
     setSearchParams(newSearchParams);
   };
 
-  // Initialize from URL params
+  // Handle client selection change
+  const handleClientChange = (event) => {
+    const clientValue = event.target.value;
+    setSelectedClient(clientValue);
+    
+    // Store client selection in localStorage for persistence
+    localStorage.setItem('selectedClient', clientValue);
+    
+    // You can add additional logic here to handle client-specific configurations
+    console.log(`Switched to client: ${clientValue}`);
+    
+    // Optionally, you could reload the page or trigger a context update
+    // window.location.reload(); // Uncomment if you want to reload on client change
+  };
+
+  // Initialize from URL params and localStorage
   useEffect(() => {
     const operator = searchParams.get("operator");
     const brand = searchParams.get("brand");
+    const savedClient = localStorage.getItem('selectedClient');
     
     if (operator) {
       setShowSelectedOperator(operator);
@@ -109,9 +126,16 @@ const Header = () => {
     if (brand) {
       setSelectedBrand(brand);
     }
+    if (savedClient) {
+      setSelectedClient(savedClient);
+    }
   }, [searchParams]);
 
-  const options = [{ label: "GCPL", value: "GCPL" }];
+  const clientOptions = [
+    { label: "GCPL", value: "GCPL" },
+    { label: "Samsonite", value: "Samsonite" },
+    { label: "Bowlers", value: "Bowlers" }
+  ];
 
   const onHamburgerClick = () => {
     let sideNavMain = document.getElementsByClassName(
@@ -227,11 +251,12 @@ const Header = () => {
           {/* Client Select */}
           <SelectFieldComponent
             isFieldLabelRequired={false}
-            areaLabel="user-detail"
+            areaLabel="client-select"
             fieldClass={"client-select"}
-            isDisabled={true}
-            options={options}
-            onChange={(e) => setUserCountryData(e.target.value)}
+            isDisabled={false}
+            options={clientOptions}
+            value={selectedClient}
+            onChange={handleClientChange}
           />
 
           {/* Date Picker */}
