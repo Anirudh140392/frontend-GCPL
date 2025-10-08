@@ -13,6 +13,7 @@ import { cachedFetch } from "../../../../services/cachedFetch";
 import { getCache, setCache } from "../../../../services/cacheUtils";
 import OnePercentageDataComponent from "../../common/onePercentageComponent";
 import ValueFormatter from "../../common/valueFormatter";
+import { getApiUrlWithParams, API_ENDPOINTS } from "../../../../services/apiService";
 
 const CampaignsComponent = (props, ref) => {
 
@@ -313,11 +314,22 @@ const CampaignsComponent = (props, ref) => {
         const endDate = formatDate(dateRange[0].endDate);
 
         try {
-            const ts = forceRefresh ? `&_=${Date.now()}` : "";
-            let url = `https://react-api-script.onrender.com/gcpl/campaign?start_date=${startDate}&end_date=${endDate}&platform=${operator}${ts}`;
+            // Build URL using API service for client-specific endpoints
+            const params = {
+                start_date: startDate,
+                end_date: endDate,
+                platform: operator
+            };
+            
             if (selectedBrand && typeof selectedBrand === "string") {
-                url += `&brand_name=${encodeURIComponent(selectedBrand)}`;
+                params.brand_name = selectedBrand;
             }
+            
+            if (forceRefresh) {
+                params._ = Date.now();
+            }
+            
+            const url = getApiUrlWithParams(API_ENDPOINTS.CAMPAIGNS, params);
             const cacheKey = `cache:GET:${url}`;
 
             if (forceRefresh) {
@@ -430,10 +442,20 @@ const CampaignsComponent = (props, ref) => {
             const token = localStorage.getItem("accessToken");
             const startDate = formatDate(dateRange[0].startDate);
             const endDate = formatDate(dateRange[0].endDate);
-            let url = `https://react-api-script.onrender.com/gcpl/campaign_graph?start_date=${formatDate(startDate)}&end_date=${formatDate(endDate)}&platform=${operator}&campaign_id=${campaignId}`;
+            
+            // Build URL using API service for client-specific endpoints
+            const params = {
+                start_date: formatDate(startDate),
+                end_date: formatDate(endDate),
+                platform: operator,
+                campaign_id: campaignId
+            };
+            
             if (selectedBrand && typeof selectedBrand === "string") {
-                url += `&brand_name=${encodeURIComponent(selectedBrand)}`;
+                params.brand_name = selectedBrand;
             }
+            
+            const url = getApiUrlWithParams(API_ENDPOINTS.CAMPAIGN_GRAPH, params);
             const cacheKey = `cache:GET:${url}`;
 
             const cached = getCache(cacheKey);
@@ -485,7 +507,7 @@ const CampaignsComponent = (props, ref) => {
                 brand: selectedBrand
             };
 
-            const playPauseUrl = `https://react-api-script.onrender.com/gcpl/campaign-play-pause?platform=${operator}`;
+            const playPauseUrl = getApiUrlWithParams(API_ENDPOINTS.CAMPAIGN_PLAY_PAUSE, { platform: operator });
 
             const response = await fetch(playPauseUrl, {
                 method: "PUT",
